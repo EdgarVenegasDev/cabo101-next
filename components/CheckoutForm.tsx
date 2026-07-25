@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import PaymentBrick from "@/components/PaymentBrick";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,12 +23,20 @@ type Props = {
   departureDate: string;
   returnDate: string;
   tripType: string;
-  // Cuando viene true (ej. faltan datos que solo se piden si el cliente
-  // llegó desde una tarjeta de Viajes Populares), el botón de continuar
-  // se mantiene deshabilitado aunque el resto de los campos ya esté
-  // completo. Opcional para no romper otros usos de este componente.
   disableContinue?: boolean;
 };
+
+// Opciones de parada (ej. supermercado/farmacia camino al destino).
+// 15 minutos van incluidos sin costo; cada tramo adicional tiene un
+// cargo fijo. Si necesitas cambiar estos montos, es el único lugar
+// donde están definidos.
+const STOP_OPTIONS = [
+  { value: "15", label: "15 minutes", fee: 0 },
+  { value: "30", label: "30 minutes", fee: 10 },
+  { value: "60", label: "1 hour", fee: 50 },
+  { value: "90", label: "1 hour 30 minutes", fee: 100 },
+  { value: "120", label: "2 hours", fee: 200 },
+] as const;
 
 export default function CheckoutForm({
   vehicle,
@@ -56,7 +64,15 @@ export default function CheckoutForm({
     notes: "",
   });
 
+  const [stopOption, setStopOption] = useState<string>("15");
   const [showPayment, setShowPayment] = useState(false);
+
+  const selectedStop = useMemo(
+    () => STOP_OPTIONS.find((o) => o.value === stopOption) ?? STOP_OPTIONS[0],
+    [stopOption]
+  );
+  const stopFee = selectedStop.fee;
+  const totalWithStop = priceUSD !== null ? priceUSD + stopFee : null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -83,9 +99,19 @@ export default function CheckoutForm({
         throw new Error("Missing payment information from the brick");
       }
 
-      // ✅ Construcción del payload con todos los campos requeridos
+      const finalTotal = priceUSD + stopFee;
+
+      // El costo de la parada se manda como additionalService, el mismo
+      // campo que ya usa el flujo de admin para "servicios adicionales"
+      // — mismo concepto (cargo extra sobre el transporte base), así
+      // que reutilizarlo es consistente con el resto del sistema.
+      //
+      // ⚠️ Si buildBookingPayload no reconoce "additionalService" como
+      // parámetro (TypeScript te lo va a decir clarísimo en el build,
+      // igual que pasó con el campo "image" de Vehicle), avísame y
+      // ajustamos el nombre exacto del campo.
       const bookingPayload = buildBookingPayload({
-        transaction_amount: priceUSD,
+        transaction_amount: finalTotal,
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -102,11 +128,17 @@ export default function CheckoutForm({
         returnDropoffLocation: tripType === "round" ? from : "",
         returnPickupDate: tripType === "round" ? returnDate : "",
         returnPickupTime: tripType === "round" ? formData.returnPickupTime : "",
-        returnFlight: tripType === "round" ? formData.returnFlight : "",   // ✅ agregado
+        returnFlight: tripType === "round" ? formData.returnFlight : "",
         airline: formData.airline,
         flight: formData.flight,
         arrival: formData.arrival,
-        notes: formData.notes,
+        additionalService: stopFee,
+        notes:
+          stopFee > 0
+            ? `Grocery/errand stop requested: ${selectedStop.label}.${
+                formData.notes ? ` ${formData.notes}` : ""
+              }`
+            : formData.notes,
       });
 
       const payload = {
@@ -132,8 +164,6 @@ export default function CheckoutForm({
       }
 
       if (result.status === "approved") {
-        // router.push en vez de window.location.href: evita una recarga
-        // completa del navegador justo después de pagar.
         router.push(`/success?id=${result.id}`);
       }
 
@@ -142,6 +172,8 @@ export default function CheckoutForm({
     [
       formData,
       priceUSD,
+      stopFee,
+      selectedStop,
       vehicle.name,
       from,
       to,
@@ -149,11 +181,9 @@ export default function CheckoutForm({
       departureDate,
       returnDate,
       tripType,
+      router,
     ]
   );
-
-  const totalDisplay =
-    priceUSD === null ? "Calculating..." : `$${priceUSD} USD`;
 
   const isContinueDisabled =
     priceUSD === null ||
@@ -272,6 +302,48 @@ export default function CheckoutForm({
                 <label className="label-line">Arrival Time</label>
               </div>
 
+              {/* Customize your trip with stops */}
+              <div className="col-span-2">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Customize your trip with stops
+                </label>
+                <p className="text-xs text-gray-400 mb-3">
+                  Need to stop at a grocery store, pharmacy, or convenience
+                  store on the way? Choose how much extra time to add.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {STOP_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-center justify-between gap-3 border rounded-xl px-4 py-3 cursor-pointer transition ${
+                        stopOption === opt.value
+                          ? "border-[#4ccb8c] bg-[#4ccb8c]/5"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="stopOption"
+                          value={opt.value}
+                          checked={stopOption === opt.value}
+                          onChange={() => setStopOption(opt.value)}
+                          className="accent-[#4ccb8c]"
+                        />
+                        <span className="text-sm text-gray-800">{opt.label}</span>
+                      </span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          opt.fee === 0 ? "text-[#4ccb8c]" : "text-gray-500"
+                        }`}
+                      >
+                        {opt.fee === 0 ? "Free" : `+$${opt.fee} USD`}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="col-span-2">
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Special Requests
@@ -287,12 +359,11 @@ export default function CheckoutForm({
                       }))
                     }
                     rows={4}
-                    placeholder="Baby seat, wheelchair, extra luggage, grocery stop, surfboards, etc."
+                    placeholder="Baby seat, wheelchair, extra luggage, surfboards, etc."
                     className="w-full border rounded-lg p-3"
                   />
               </div>
 
-              {/* ✅ Campos de regreso dentro del grid (con corrección visual) */}
               {tripType === "round" && (
                 <>
                   <div className="col-span-2 mt-2">
@@ -325,11 +396,29 @@ export default function CheckoutForm({
                   </div>
                 </>
               )}
-            </div> {/* fin del grid */}
+            </div>
 
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>{totalDisplay}</span>
+            {/* Desglose de precio: solo se muestra el detalle si hay un
+                cargo por parada; si no, se ve igual que antes. */}
+            <div className="space-y-1">
+              {stopFee > 0 && (
+                <>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Transport</span>
+                    <span>{priceUSD === null ? "—" : `$${priceUSD} USD`}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Grocery stop ({selectedStop.label})</span>
+                    <span>+${stopFee} USD</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between text-lg font-semibold pt-1">
+                <span>Total</span>
+                <span>
+                  {priceUSD === null ? "Calculating..." : `$${totalWithStop} USD`}
+                </span>
+              </div>
             </div>
 
             <button
@@ -361,7 +450,7 @@ export default function CheckoutForm({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <PaymentBrick amount={priceUSD ?? 0} onSubmit={handlePayment} />
+            <PaymentBrick amount={totalWithStop ?? 0} onSubmit={handlePayment} />
           </motion.div>
         )}
       </AnimatePresence>
