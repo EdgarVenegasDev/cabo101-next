@@ -11,15 +11,50 @@ type Vehicle = {
   image: string;
   maxPassengers: number;
   disabled?: boolean;
+  annotations?: string[];
 };
 
 type Props = {
   vehicles: Vehicle[];
   selected: Vehicle;
   onSelect: (vehicle: Vehicle) => void;
+  // Cantidad real de pasajeros de ESTA reserva (no la capacidad máxima
+  // del vehículo) — 1 maleta grande + 1 de mano se agregan por cada
+  // pasajero, así que las maletas escalan con este número.
+  passengerCount: number;
 };
 
-export default function VehicleSelector({ vehicles, selected, onSelect }: Props) {
+function PassengersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function BagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="7" width="16" height="14" rx="2" />
+      <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}
+
+function CarryOnIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="4" width="12" height="17" rx="2" />
+      <path d="M10 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" />
+      <line x1="9" y1="10" x2="15" y2="10" />
+    </svg>
+  );
+}
+
+export default function VehicleSelector({ vehicles, selected, onSelect, passengerCount }: Props) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
       {vehicles.map((v, index) => {
@@ -29,9 +64,9 @@ export default function VehicleSelector({ vehicles, selected, onSelect }: Props)
           <motion.div
             key={v.name}
             onClick={() => {
-            if (!v.disabled) {
+              if (!v.disabled) {
                 onSelect(v);
-            }
+              }
             }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -39,7 +74,7 @@ export default function VehicleSelector({ vehicles, selected, onSelect }: Props)
             whileHover={v.disabled ? {} : { scale: 1.01 }}
             whileTap={v.disabled ? {} : { scale: 0.98 }}
             className={`
-            flex items-center justify-between p-4
+            flex items-start justify-between gap-4 p-4
             transition-all duration-300
             ${
                 v.disabled
@@ -52,11 +87,11 @@ export default function VehicleSelector({ vehicles, selected, onSelect }: Props)
             `}
           >
             {/* LEFT SIDE */}
-            <div className="flex items-center gap-4">
-              <motion.div whileHover={{ scale: 1.08 }} className="bg-gray-50 rounded-lg p-2">
+            <div className="flex items-start gap-4 min-w-0">
+              <motion.div whileHover={{ scale: 1.08 }} className="bg-gray-50 rounded-lg p-2 flex-shrink-0">
                 <Image src={v.image} alt={v.name} width={90} height={50} className="object-contain" />
               </motion.div>
-              <div>
+              <div className="min-w-0">
                 <p className="font-semibold text-gray-900">{v.name}</p>
                 <p className="text-sm text-gray-500">Up to {v.capacity} passengers</p>
                 {v.disabled && (
@@ -64,11 +99,43 @@ export default function VehicleSelector({ vehicles, selected, onSelect }: Props)
                     Not enough capacity
                 </p>
                 )}
+
+                {/* Anotaciones libres (una por línea en Vehicle.annotations,
+                    editables desde /admin/vehicles) */}
+                {v.annotations && v.annotations.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {v.annotations.map((note, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md"
+                      >
+                        {note}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Maletas: 1 grande + 1 de mano por pasajero de ESTA
+                    reserva (no por la capacidad máxima del vehículo) */}
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <PassengersIcon className="w-3.5 h-3.5" />
+                    {passengerCount}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <BagIcon className="w-3.5 h-3.5" />
+                    {passengerCount} bag{passengerCount === 1 ? "" : "s"}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <CarryOnIcon className="w-3.5 h-3.5" />
+                    {passengerCount} carry-on{passengerCount === 1 ? "" : "s"}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* RIGHT SIDE – sin precio fijo */}
-            <div className="text-right">
+            <div className="text-right flex-shrink-0">
               {active && (
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -78,7 +145,6 @@ export default function VehicleSelector({ vehicles, selected, onSelect }: Props)
                   Selected
                 </motion.p>
               )}
-              {/* Opcional: mostrar mensaje de precio dinámico */}
               <p className="text-xs text-gray-400 mt-1">Dynamic pricing</p>
             </div>
           </motion.div>

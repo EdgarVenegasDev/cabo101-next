@@ -11,6 +11,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       capacity: Number(body.capacity),
       active: body.active,
       image: body.image,
+      annotations: body.annotations,
     }
   })
   return NextResponse.json(vehicle)

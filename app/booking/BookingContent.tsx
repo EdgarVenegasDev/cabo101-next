@@ -15,20 +15,18 @@ type Vehicle = {
   capacity: string;
   image: string;
   maxPassengers: number;
+  annotations: string[];
 };
 
-// Forma real que devuelve GET /api/vehicles (tabla Vehicle de Prisma).
 type ApiVehicle = {
   id: number;
   name: string;
   capacity: number;
   active: boolean;
   image?: string | null;
+  annotations?: string | null;
 };
 
-// Fotos de respaldo, usadas solo si un vehículo todavía no tiene "image"
-// configurada en el admin, o si /api/vehicles falla por completo (para
-// que el flujo de reserva nunca se rompa por un problema de red/BD).
 const DEFAULT_VEHICLE_IMAGES: Record<string, string> = {
   SUV: "/images/suv.png",
   VAN: "/images/van.png",
@@ -37,17 +35,30 @@ const DEFAULT_VEHICLE_IMAGES: Record<string, string> = {
 const FALLBACK_VEHICLE_IMAGE = "/images/van.png";
 
 const FALLBACK_VEHICLES: Vehicle[] = [
-  { name: "SUV", capacity: "Up to 6", image: "/images/suv.png", maxPassengers: 6 },
-  { name: "VAN", capacity: "Up to 11", image: "/images/van.png", maxPassengers: 11 },
-  { name: "SPRINTER", capacity: "Up to 19", image: "/images/splinter.png", maxPassengers: 19 },
+  { name: "SUV", capacity: "6", image: "/images/suv.png", maxPassengers: 6, annotations: [] },
+  { name: "VAN", capacity: "11", image: "/images/van.png", maxPassengers: 11, annotations: [] },
+  { name: "SPRINTER", capacity: "19", image: "/images/splinter.png", maxPassengers: 19, annotations: [] },
 ];
+
+// Convierte "Direct ride - no stops\nDriver may not speak English" (como
+// se captura en /admin/vehicles) en un arreglo de anotaciones limpias.
+function parseAnnotations(raw?: string | null): string[] {
+  return (raw || "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 function mapApiVehicle(v: ApiVehicle): Vehicle {
   return {
     name: v.name,
-    capacity: `Up to ${v.capacity}`,
+    // Antes esto era `Up to ${v.capacity}` — pero VehicleSelector y
+    // BookingSummary ya anteponen su propio "Up to" al mostrarlo, así
+    // que salía "Up to Up to 19 passengers". Guardamos solo el número.
+    capacity: String(v.capacity),
     image: v.image || DEFAULT_VEHICLE_IMAGES[v.name] || FALLBACK_VEHICLE_IMAGE,
     maxPassengers: v.capacity,
+    annotations: parseAnnotations(v.annotations),
   };
 }
 
@@ -58,17 +69,12 @@ const labelClass = "text-xs font-medium text-gray-500 mb-1 block";
 export default function BookingContent() {
   const params = useSearchParams();
 
-  // Parámetros generales
   const from = params.get("from") || "";
   const to = params.get("to") || "";
   const passengers = params.get("passengers") || "1";
   const passengerCount = Number(passengers);
   const tripType = params.get("tripType") || "oneway";
 
-  // Si viene de una tarjeta de "Viajes Populares", solo trae la zona
-  // (ej. "Cabo San Lucas"), no una fecha ni la dirección específica del
-  // hotel/villa — a diferencia del buscador normal, que siempre trae
-  // ambas cosas desde Google Places / el calendario de BookingForm.
   const isFromPopularTransfer = params.get("source") === "popular";
 
   const [departureDate, setDepartureDate] = useState(params.get("departureDate") || "");
@@ -86,7 +92,6 @@ export default function BookingContent() {
     isFromPopularTransfer &&
     (!departureDate || (tripType === "round" && !returnDate) || !specificAddress.trim());
 
-  // Coordenadas (raw strings)
   const fromLatRaw = params.get("fromLat") || "";
   const fromLngRaw = params.get("fromLng") || "";
   const toLatRaw   = params.get("toLat") || "";
@@ -107,9 +112,6 @@ export default function BookingContent() {
     !Number.isNaN(toLat) &&
     !Number.isNaN(toLng);
 
-  // Vehículos: arrancan con el respaldo local (para no mostrar nada roto
-  // mientras carga), y se reemplazan por los reales en cuanto llega
-  // /api/vehicles.
   const [vehicles, setVehicles] = useState<Vehicle[]>(FALLBACK_VEHICLES);
   const [vehicle, setVehicle] = useState<Vehicle>(FALLBACK_VEHICLES[0]);
   const [priceUSD, setPriceUSD] = useState<number | null>(null);
@@ -117,8 +119,6 @@ export default function BookingContent() {
   const [fromZone, setFromZone] = useState("");
   const [toZone, setToZone] = useState("");
 
-  // Trae los vehículos reales (con su foto, si el admin ya la subió) de
-  // la base de datos, en vez de usar el arreglo hardcodeado de antes.
   useEffect(() => {
     let active = true;
     fetch("/api/vehicles")
@@ -141,10 +141,6 @@ export default function BookingContent() {
     };
   }, []);
 
-  // Si el vehículo seleccionado no alcanza para los pasajeros, sube al
-  // más chico que sí alcance (ya no depende de nombres fijos como
-  // "SUV"/"VAN"/"SPRINTER" — funciona con cualquier vehículo que el
-  // admin haya dado de alta).
   useEffect(() => {
     if (vehicle.maxPassengers >= passengerCount) return;
 
@@ -155,7 +151,6 @@ export default function BookingContent() {
     if (bigEnough) setVehicle(bigEnough);
   }, [passengerCount, vehicle, vehicles]);
 
-  // Llamada a /api/pricing
   useEffect(() => {
     let mounted = true;
 
@@ -233,7 +228,6 @@ export default function BookingContent() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] text-black">
-      {/* HEADER */}
       <div className="bg-white border-b border-[#e5e7eb]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
@@ -243,14 +237,12 @@ export default function BookingContent() {
         </div>
       </div>
 
-      {/* CONTENIDO */}
       <div className="p-6">
         <div className="max-w-7xl mx-auto mb-10">
           <h1 className="text-3xl font-semibold">Details & payment</h1>
         </div>
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-10">
-          {/* COLUMNA IZQUIERDA */}
           <div className="space-y-6">
             {isFromPopularTransfer && (
               <div className="bg-white rounded-2xl border border-teal-200 p-6 space-y-4">
@@ -314,6 +306,7 @@ export default function BookingContent() {
             vehicles={availableVehicles}
             selected={vehicle}
             onSelect={setVehicle}
+            passengerCount={passengerCount}
             />
 
             <CheckoutForm
@@ -329,7 +322,6 @@ export default function BookingContent() {
             />
           </div>
 
-          {/* COLUMNA DERECHA */}
           <div className="lg:sticky top-10 h-fit">
             <BookingSummary
               from={from}
