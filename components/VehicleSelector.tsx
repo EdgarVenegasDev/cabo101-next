@@ -11,7 +11,12 @@ type Vehicle = {
   image: string;
   maxPassengers: number;
   disabled?: boolean;
-  annotations?: string[];
+  // No opcional: BookingContent siempre manda un arreglo (aunque esté
+  // vacío), nunca undefined. Si esto quedara opcional aquí mientras en
+  // BookingContent es obligatorio, TypeScript trata ambos "Vehicle"
+  // como tipos incompatibles aunque se llamen igual — eso causaba el
+  // error de build en onSelect={setVehicle}.
+  annotations: string[];
 };
 
 type Props = {
