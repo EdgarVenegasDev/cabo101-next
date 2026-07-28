@@ -40,8 +40,10 @@ interface Booking {
   returnFlightNumber?: string;
   notes?: string;
   driverNotes?: string;
+  stopMinutes?: number | null;
+  stopFeeUSD?: number | null;
   createdAt: string;
-  payments?: Payment[]; // puede ser opcional por si la API no lo incluye
+  payments?: Payment[];
 }
 
 type FilterType = {
@@ -51,6 +53,19 @@ type FilterType = {
   sortBy: "mostRecent" | "highestRevenue" | "priceAsc" | "priceDesc" | "dateAsc" | "alphaAsc";
   searchTerm: string;
 };
+
+// Traduce minutos a una etiqueta legible, igual que en CheckoutForm y
+// en el correo de confirmación.
+function stopLabel(minutes?: number | null): string {
+  switch (minutes) {
+    case 15: return "15 minutes";
+    case 30: return "30 minutes";
+    case 60: return "1 hour";
+    case 90: return "1 hour 30 minutes";
+    case 120: return "2 hours";
+    default: return minutes ? `${minutes} minutes` : "";
+  }
+}
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -75,7 +90,6 @@ export default function BookingsPage() {
       const res = await fetch("/api/bookings");
       if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
       const data = await res.json();
-      // ✅ Validación: asegurar que data es un array
       if (Array.isArray(data)) {
         setBookings(data);
       } else {
@@ -97,7 +111,6 @@ export default function BookingsPage() {
     loadBookings();
   }, []);
 
-  // Aplicar filtros y ordenamiento
   useEffect(() => {
     if (!Array.isArray(bookings)) {
       setFilteredBookings([]);
@@ -105,7 +118,6 @@ export default function BookingsPage() {
     }
     let result = [...bookings];
 
-    // Búsqueda
     if (filters.searchTerm.trim() !== "") {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(
@@ -118,7 +130,6 @@ export default function BookingsPage() {
       );
     }
 
-    // Filtro de fecha
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
     switch (filters.dateRange) {
@@ -143,17 +154,14 @@ export default function BookingsPage() {
         break;
     }
 
-    // Estado de pago
     if (filters.paymentStatus !== "all") {
       result = result.filter((b) => b.paymentStatus === filters.paymentStatus);
     }
 
-    // Estado del viaje
     if (filters.tripStatus !== "all") {
       result = result.filter((b) => b.tripStatus === filters.tripStatus);
     }
 
-    // Ordenamiento
     switch (filters.sortBy) {
       case "mostRecent":
         result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -209,11 +217,9 @@ export default function BookingsPage() {
 
       const updatedBooking = await res.json();
 
-      // Actualizar la lista completa
       setBookings((prev) =>
         prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b))
       );
-      // Actualizar el booking seleccionado en el modal
       setSelectedBooking(updatedBooking);
       if (notes !== undefined) setDriverNotes(updatedBooking.driverNotes || "");
     } catch (err) {
@@ -375,6 +381,15 @@ export default function BookingsPage() {
                             ? "En curso"
                             : "Pendiente"}
                         </span>
+                        {/* Insignia de parada: destaca de inmediato en la lista
+                            si el conductor tiene que hacer una parada extra,
+                            sin tener que abrir el modal para enterarse. */}
+                        {typeof booking.stopMinutes === "number" && (
+                          <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                            🛑 Stop: {stopLabel(booking.stopMinutes)}
+                            {booking.stopFeeUSD ? ` (+$${booking.stopFeeUSD} USD)` : " (Free)"}
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
                         {booking.pickupLocation} → {booking.dropoffLocation}
@@ -437,6 +452,21 @@ export default function BookingsPage() {
                     </div>
                   )}
                   <div className="mt-2"><span className="text-gray-400">Vehículo:</span> {selectedBooking.vehicleType} · {selectedBooking.passengers} pasajeros</div>
+
+                  {/* Parada destacada: el conductor necesita ver esto de un
+                      vistazo, no perdido dentro de un párrafo de notas. */}
+                  {typeof selectedBooking.stopMinutes === "number" && (
+                    <div className="mt-3 bg-purple-50 border border-purple-100 rounded-lg p-3">
+                      <p className="text-sm font-semibold text-purple-800">
+                        🛑 Requested stop: {stopLabel(selectedBooking.stopMinutes)}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-0.5">
+                        {selectedBooking.stopFeeUSD
+                          ? `Charged +$${selectedBooking.stopFeeUSD} USD`
+                          : "Included at no extra charge"}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

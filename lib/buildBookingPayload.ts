@@ -38,6 +38,14 @@ type BookingInput = {
   additionalService?: number;
   paidAmount?: number;
 
+  // Parada tipo "grocery stop": minutos elegidos (15/30/60/90/120) y el
+  // cargo correspondiente en USD (0/10/50/100/200). Se mandan aparte de
+  // additionalService para que el correo y el admin puedan mostrar algo
+  // claro como "Stop: 30 minutes (+$10 USD)" en vez de solo un monto
+  // genérico de "servicio adicional".
+  stopMinutes?: number;
+  stopFeeUSD?: number;
+
   notes?: string;
 };
 
@@ -67,6 +75,9 @@ export function buildBookingPayload(input: BookingInput) {
     additionalService: input.additionalService,
     paidAmount: input.paidAmount,
 
+    stopMinutes: input.stopMinutes,
+    stopFeeUSD: input.stopFeeUSD,
+
     notes: input.notes,
 
     payer: {
@@ -93,9 +104,11 @@ export function buildBookingPayload(input: BookingInput) {
         airline: input.airline,
         flight: input.flight,
         arrival: input.arrival,
-        returnFlight: input.returnFlight,        // ✅ agregado
+        returnFlight: input.returnFlight,
         additionalService: input.additionalService,
         paidAmount: input.paidAmount,
+        stopMinutes: input.stopMinutes,
+        stopFeeUSD: input.stopFeeUSD,
         notes: input.notes,
       },
     },

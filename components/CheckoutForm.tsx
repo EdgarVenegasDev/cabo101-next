@@ -133,6 +133,8 @@ export default function CheckoutForm({
         flight: formData.flight,
         arrival: formData.arrival,
         additionalService: stopFee,
+        stopMinutes: Number(stopOption),
+        stopFeeUSD: stopFee,
         notes:
           stopFee > 0
             ? `Grocery/errand stop requested: ${selectedStop.label}.${

@@ -38,6 +38,11 @@ export type BookingEmailData = {
 
   subtotal: number;
   additionalService: number;
+  // Parada tipo "grocery stop": minutos elegidos y su cargo. Opcionales
+  // porque una reserva armada desde el admin (sin pasar por
+  // CheckoutForm) puede no tener esta información.
+  stopMinutes?: number;
+  stopFeeUSD?: number;
   total: number;
   paidAmount: number;
   toPay: number;
@@ -53,6 +58,21 @@ export function bookingConfirmationTemplate(data: BookingEmailData): string {
     <span style="font-size:13px; color:#1f2937; font-weight:600; display:block; margin-bottom:3px;">${label}</span>
     <span style="font-size:13px; color:#374151;">${value}</span>
   `;
+
+  // Solo se muestra si de verdad viene un stopMinutes definido (aunque
+  // sea 15 minutos gratis) — así el cliente ve claramente que sí
+  // registramos su preferencia de parada, no solo el monto extra.
+  const hasStopInfo = typeof data.stopMinutes === "number";
+  const stopLabel = (() => {
+    switch (data.stopMinutes) {
+      case 15: return "15 minutes";
+      case 30: return "30 minutes";
+      case 60: return "1 hour";
+      case 90: return "1 hour 30 minutes";
+      case 120: return "2 hours";
+      default: return data.stopMinutes ? `${data.stopMinutes} minutes` : "";
+    }
+  })();
 
   return `
 <div style="font-family:'Trebuchet MS', Tahoma, sans-serif; background:#f0f0f0; padding:20px;">
@@ -140,6 +160,11 @@ export function bookingConfirmationTemplate(data: BookingEmailData): string {
           <td style="padding:0 8px;">${field("Flight", safe(data.flight))}</td>
           <td style="padding:0;">${field("Arrival Time", safe(data.arrival))}</td>
         </tr>
+        ${hasStopInfo ? `
+        <tr>
+          <td style="padding:14px 8px 0 0;" colspan="3">${field("Stop Requested", `${stopLabel}${data.stopFeeUSD ? ` (+$${formatPrice(data.stopFeeUSD)} USD)` : " (Free)"}`)}</td>
+        </tr>
+        ` : ""}
       </table>
 
       ${data.roundTrip ? `
@@ -179,7 +204,9 @@ export function bookingConfirmationTemplate(data: BookingEmailData): string {
           <td align="right" style="padding:7px 0;">$${formatPrice(data.subtotal)} USD</td>
         </tr>
         <tr>
-          <td style="padding:7px 0;">Additional Service</td>
+          <td style="padding:7px 0;">
+            Additional Service${hasStopInfo ? ` (Stop: ${stopLabel})` : ""}
+          </td>
           <td align="right" style="padding:7px 0;">$${formatPrice(data.additionalService)} USD</td>
         </tr>
         <tr>

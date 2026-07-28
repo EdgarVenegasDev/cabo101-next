@@ -67,6 +67,16 @@ export async function POST(req: Request) {
     const paidAmount = Number(data.paidAmount) || totalUSD;
     const toPay = Math.max(totalUSD - paidAmount, 0);
 
+    // Datos de la parada tipo "grocery stop" (opcional). stopMinutes solo
+    // se guarda/muestra si de verdad hubo un cargo (>0) o si el cliente
+    // vino del flujo nuevo de CheckoutForm que siempre manda estos
+    // campos — por eso se valida que ambos existan como número.
+    const stopMinutesRaw = Number(data.stopMinutes);
+    const stopFeeUSDRaw = Number(data.stopFeeUSD);
+    const hasStopInfo = Number.isFinite(stopMinutesRaw) && Number.isFinite(stopFeeUSDRaw);
+    const stopMinutes = hasStopInfo ? stopMinutesRaw : null;
+    const stopFeeUSD = hasStopInfo ? stopFeeUSDRaw : null;
+
     const totalMXN = Math.round(totalUSD * USD_TO_MXN_RATE);
 
     const payment = new Payment(mp);
@@ -98,10 +108,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Siempre logueamos el resultado, sea aprobado o rechazado. Antes solo
-    // se logueaba algo dentro del bloque "if (result.status === 'approved')",
-    // así que un pago rechazado no dejaba ningún rastro del motivo en los
-    // logs de PM2 — solo se veía "AMOUNT: X" y ahí terminaba todo.
     console.log("MP RESULT:", {
       id: result.id,
       status: result.status,
@@ -129,15 +135,16 @@ export async function POST(req: Request) {
         dropoff: data.dropoffLocation,
         serviceType: data.roundTrip ? "Round Trip" : "One way",
         paymentId: result.id,
+        stopMinutes,
+        stopFeeUSD,
       });
 
-      // ✅ Construcción del templateData con firstName + lastName
       const templateData: BookingEmailData = {
         pickupDate: data.pickupDate,
         id: result.id,
         roundTrip: data.roundTrip,
 
-        name: [data.firstName, data.lastName].filter(Boolean).join(" "), // nombre completo
+        name: [data.firstName, data.lastName].filter(Boolean).join(" "),
         phone: data.phone,
         email: data.email,
 
@@ -161,6 +168,8 @@ export async function POST(req: Request) {
 
         subtotal,
         additionalService,
+        stopMinutes: stopMinutes ?? undefined,
+        stopFeeUSD: stopFeeUSD ?? undefined,
         total: totalUSD,
         paidAmount,
         toPay,
@@ -207,6 +216,9 @@ export async function POST(req: Request) {
           returnFlightNumber: data.returnFlight,
 
           notes: data.notes,
+
+          stopMinutes,
+          stopFeeUSD,
         },
       });
 

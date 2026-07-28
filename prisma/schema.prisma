@@ -1,42 +1,150 @@
-model Booking {
-  id Int @id @default(autoincrement())
+generator client {
+  provider = "prisma-client-js"
+}
 
-  firstName String
-  lastName String
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
 
-  email String
-  phone String
+// ----------------------
+// Zonas (ubicaciones)
+// ----------------------
+model Zone {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique          // identificador único tipo "san-jose-del-cabo"
+  name      String                    // nombre para mostrar: "San José del Cabo"
+  latMin    Float?                    // límite sur de la zona (latitud mínima)
+  latMax    Float?                    // límite norte (latitud máxima)
+  lngMin    Float?                    // límite oeste (longitud mínima)
+  lngMax    Float?                    // límite este (longitud máxima)
+  isAirport Boolean  @default(false)  // si es el aeropuerto de SJD
+  createdAt DateTime @default(now())
 
-  pickupLocation String
-  dropoffLocation String
+  popularTransfer PopularTransfer? // relación opcional (uno a uno)
+}
 
-  passengers Int
-  vehicleType String
-
-  pickupDate String
-  pickupTime String
-
-  roundTrip Boolean @default(false)
-
-  returnPickupLocation String?
-  returnDropoffLocation String?
-  returnPickupDate String?
-  returnPickupTime String?
-
-  totalUSD Float?
-  totalMXN Float?
-
-  paymentStatus String @default("pending")
-  tripStatus String @default("pending")
-
-  airline String?
-  flightNumber String?
-
-  notes String? @db.Text
-  driverNotes String? @db.Text
-
+// ----------------------
+// Vehículos
+// ----------------------
+model Vehicle {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique   // "SUV", "VAN", "SPRINTER", etc.
+  capacity  Int                 // número máximo de pasajeros
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  prices       Price[]
+  popularTransfers PopularTransfer[] // una relación uno a muchos (opcional)
+
+  image String?
+  annotations String? @db.Text
+}
+
+// ----------------------
+// Viajes populares (destacados en la home)
+// ----------------------
+model PopularTransfer {
+  id         Int      @id @default(autoincrement())
+  zoneId     Int      @unique                // una zona solo puede aparecer una vez
+  vehicleId  Int
+  travelTime String                          // ej: "15 min from airport"
+  sortOrder  Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  zone    Zone    @relation(fields: [zoneId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  image      String? //
+
+  @@index([zoneId])
+  @@index([vehicleId])
+}
+
+// ----------------------
+// Precios (por ruta y vehículo)
+// ----------------------
+model Price {
+  id         Int      @id @default(autoincrement())
+  fromZone   String            // slug de la zona origen
+  toZone     String            // slug de la zona destino
+  vehicleId  Int
+  oneWay     Float             // precio en USD por trayecto simple
+  roundTrip  Float             // precio en USD por ida y vuelta
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@unique([fromZone, toZone, vehicleId])
+}
+
+// ----------------------
+// Reservas (Bookings)
+// ----------------------
+model Booking {
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  pickupLocation   String
+  dropoffLocation  String
+  passengers       Int
+  vehicleType      String
+  pickupDate       String
+  pickupTime       String
+  roundTrip        Boolean  @default(false)
+  returnPickupLocation  String?
+  returnDropoffLocation String?
+  returnPickupDate      String?
+  returnPickupTime      String?
+  totalUSD        Float?
+  totalMXN        Float?
+  paymentStatus   String   @default("pending")
+  tripStatus      String   @default("pending")
+  airline         String?
+  flightNumber    String?
+  arrivalTime     String?
+  returnFlightNumber String?
+  notes           String?  @db.Text
+  driverNotes     String?  @db.Text
+  stopMinutes     Int?     // 15, 30, 60, 90 o 120 — null si no pidió parada
+  stopFeeUSD      Float?   // 0, 10, 50, 100 o 200
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   payments Payment[]
+}
+
+// ----------------------
+// Fotos
+// ----------------------
+model Photo {
+  id        Int      @id @default(autoincrement())
+  url       String   // URL pública de la imagen (ej. /uploads/xxx.jpg)
+  section   String   // hero, gallery, testimonios, etc.
+  order     Int      @default(0)
+  caption   String?  // texto opcional
+  createdAt DateTime @default(now())
+}
+
+
+// ----------------------
+// Pagos
+// ----------------------
+model Payment {
+  id            Int      @id @default(autoincrement())
+  bookingId     Int?
+  mercadopagoId String?
+  status        String
+  totalUSD      Float
+  totalMXN      Float
+  exchangeRate  Float
+  createdAt     DateTime @default(now())
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
 }
