@@ -4,6 +4,7 @@ import Experience from "@/sections/Experience";
 import Testimonials from "@/sections/Testimonials";
 import Footer from "@/sections/Footer";
 import OurTeam from "@/sections/ourteam";
+import FloatingContactButtons from "@/components/FloatingContactButtons";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <Experience />
       <OurTeam />
       <Testimonials />
+      <FloatingContactButtons />
       <Footer />
     </>
   );
