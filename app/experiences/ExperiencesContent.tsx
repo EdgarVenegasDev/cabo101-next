@@ -261,8 +261,12 @@ export default function ExperiencesContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* ---------- HERO ---------- */}
-      <section className="relative min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
-        <div className="absolute inset-0 -z-10">
+      <section className="relative isolate min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
+        {/* Sin z-index negativo: "isolate" en la sección crea su propio
+            contexto de apilamiento, así que este div se queda detrás
+            del contenido de abajo sin arriesgarse a caer detrás de
+            toda la página (el bug que causaba el fondo en blanco). */}
+        <div className="absolute inset-0 z-0 bg-teal-900">
           <video
             key={heroVideoUrl}
             src={heroVideoUrl}
@@ -272,32 +276,35 @@ export default function ExperiencesContent() {
             playsInline
             preload="auto"
             onError={(e) => console.error("No se pudo cargar el video del hero:", heroVideoUrl, e)}
+            onLoadedData={() => console.log("Hero video cargado:", heroVideoUrl)}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         </div>
 
-        <Navbar />
+        <div className="relative z-10 flex flex-col flex-1">
+          <Navbar />
 
-        <div className="flex-1 flex flex-col justify-center max-w-4xl">
-          <FadeIn>
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-teal-300 mb-4">
-              Experiences
-            </p>
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] mb-5">
-              Live Los Cabos
-              <br />
-              like a local
-            </h1>
-            <p className="text-white/70 text-base md:text-lg max-w-md">
-              Three ways in. Pick one below and see exactly what your day could look like.
-            </p>
+          <div className="flex-1 flex flex-col justify-center max-w-4xl">
+            <FadeIn>
+              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-teal-300 mb-4">
+                Experiences
+              </p>
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] mb-5">
+                Live Los Cabos
+                <br />
+                like a local
+              </h1>
+              <p className="text-white/70 text-base md:text-lg max-w-md">
+                Three ways in. Pick one below and see exactly what your day could look like.
+              </p>
+            </FadeIn>
+          </div>
+
+          <FadeIn delay={300} className="flex justify-center pb-4">
+            <ChevronDown className="w-6 h-6 text-white/50 animate-bounce" />
           </FadeIn>
         </div>
-
-        <FadeIn delay={300} className="flex justify-center pb-4">
-          <ChevronDown className="w-6 h-6 text-white/50 animate-bounce" />
-        </FadeIn>
       </section>
 
       {/* ---------- SELECTOR DE ACTIVIDADES — estilo fichero ---------- */}
