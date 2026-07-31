@@ -12,6 +12,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       active: body.active,
       image: body.image,
       annotations: body.annotations,
+      description: body.description,
     }
   })
   return NextResponse.json(vehicle)
