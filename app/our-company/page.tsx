@@ -1,9 +1,17 @@
 // app/our-company/page.tsx
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
 import FloatingContactButtons from "@/components/FloatingContactButtons";
+
+type Photo = {
+  id: number;
+  url: string;
+  section: string;
+  caption: string | null;
+};
 
 // Contenido decorativo fijo — no depende de la base de datos. Si más
 // adelante quieres editarlo desde el admin, avísame y lo movemos a un
@@ -31,6 +39,124 @@ const VALUES = [
   },
 ];
 
+/* ---------- helper: aparece con fade + slide-up al entrar en pantalla ---------- */
+function useReveal<T extends HTMLElement>(threshold = 0.15) {
+  const ref = useRef<T | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Si el navegador no soporta IntersectionObserver, mostrar directo.
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+
+  return { ref, visible };
+}
+
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const { ref, visible } = useReveal<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+      } ${className}`}
+      style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ---------- helper: trae la primera imagen de una sección del admin ---------- */
+function useSectionImage(section: string) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/photos?section=${section}`)
+      .then((res) => res.json())
+      .then((data: Photo[]) => {
+        if (active && data.length > 0) setUrl(data[0].url);
+      })
+      .catch((err) => console.error(`Error cargando imagen de ${section}:`, err));
+    return () => {
+      active = false;
+    };
+  }, [section]);
+
+  return url;
+}
+
+/* ---------- fila de texto + imagen al lado, con reverse en desktop ---------- */
+function StoryRow({
+  eyebrow,
+  title,
+  text,
+  imageSection,
+  imageAlt,
+  reverse = false,
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+  imageSection: string;
+  imageAlt: string;
+  reverse?: boolean;
+}) {
+  const imageUrl = useSectionImage(imageSection);
+
+  return (
+    <div
+      className={`grid md:grid-cols-2 gap-8 md:gap-14 items-center ${
+        reverse ? "md:[&>*:first-child]:order-2" : ""
+      }`}
+    >
+      <Reveal delay={reverse ? 100 : 0}>
+        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-teal-600 to-teal-900 shadow-lg">
+          {imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt={imageAlt} className="w-full h-full object-cover" />
+          )}
+        </div>
+      </Reveal>
+
+      <Reveal delay={reverse ? 0 : 100}>
+        <p className="text-xs font-semibold tracking-widest uppercase text-teal-600 mb-3">
+          {eyebrow}
+        </p>
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{title}</h2>
+        <p className="text-gray-600 leading-relaxed">{text}</p>
+      </Reveal>
+    </div>
+  );
+}
+
 export default function OurCompanyPage() {
   return (
     <div className="min-h-screen bg-white">
@@ -39,46 +165,56 @@ export default function OurCompanyPage() {
       </div>
 
       <section className="py-16 md:py-24 bg-white px-4 sm:px-6 md:px-10 lg:px-20">
-        <div className="max-w-4xl mx-auto text-center mb-16">
+        <Reveal className="max-w-4xl mx-auto text-center mb-20">
           <p className="text-xs font-semibold tracking-widest uppercase text-teal-600 mb-3">
             Our Company
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900">
             Rooted in Los Cabos, driven by family values
           </h1>
+        </Reveal>
+
+        {/* Misión / Visión — texto con imagen al lado, alternando */}
+        <div className="max-w-5xl mx-auto space-y-20 md:space-y-28 mb-24">
+          <StoryRow
+            eyebrow="Our Mission"
+            title="Every arrival should feel effortless"
+            text="To make every arrival and departure in Los Cabos feel effortless, safe, and welcoming — treating every guest like family from the moment they land."
+            imageSection="company-mission"
+            imageAlt="Cabo 101 team welcoming guests"
+          />
+          <StoryRow
+            eyebrow="Our Vision"
+            title="The most trusted name in Baja California Sur"
+            text="To be the most trusted name in private transportation across Baja California Sur, known for reliability, warmth, and local knowledge."
+            imageSection="company-vision"
+            imageAlt="Cabo 101 vehicle on the road in Los Cabos"
+            reverse
+          />
         </div>
 
-        {/* Misión / Visión */}
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 mb-20">
-          <div className="bg-gray-50 rounded-2xl p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Our Mission</h2>
-            <p className="text-gray-600 leading-relaxed">
-              To make every arrival and departure in Los Cabos feel effortless,
-              safe, and welcoming — treating every guest like family from the
-              moment they land.
+        {/* Valores / información decorativa — aparecen en cascada */}
+        <div className="max-w-5xl mx-auto">
+          <Reveal className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-widest uppercase text-teal-600 mb-3">
+              What sets us apart
             </p>
-          </div>
-          <div className="bg-gray-50 rounded-2xl p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Our Vision</h2>
-            <p className="text-gray-600 leading-relaxed">
-              To be the most trusted name in private transportation across
-              Baja California Sur, known for reliability, warmth, and local
-              knowledge.
-            </p>
-          </div>
-        </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Our values</h2>
+          </Reveal>
 
-        {/* Valores / información decorativa */}
-        <div className="max-w-5xl mx-auto grid sm:grid-cols-2 gap-8">
-          {VALUES.map((v) => (
-            <div key={v.title} className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-teal-500 mt-2 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">{v.title}</p>
-                <p className="text-sm text-gray-500 leading-relaxed">{v.description}</p>
-              </div>
-            </div>
-          ))}
+          <div className="grid sm:grid-cols-2 gap-8">
+            {VALUES.map((v, i) => (
+              <Reveal key={v.title} delay={i * 120}>
+                <div className="flex items-start gap-4">
+                  <div className="w-2 h-2 rounded-full bg-teal-500 mt-2 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">{v.title}</p>
+                    <p className="text-sm text-gray-500 leading-relaxed">{v.description}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 

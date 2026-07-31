@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
 import FloatingContactButtons from "@/components/FloatingContactButtons";
+import Reveal, { FadeIn } from "@/components/Reveal";
 
 type Photo = {
   id: number;
@@ -48,6 +49,25 @@ function isVideoUrl(url: string) {
   return /\.(mp4|webm|mov)$/i.test(url);
 }
 
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function PhotoSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="aspect-square rounded-xl bg-gray-100 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
 export default function ExperiencesContent() {
   const params = useSearchParams();
   const requestedActivity = params.get("activity") as ActivityKey | null;
@@ -58,6 +78,7 @@ export default function ExperiencesContent() {
   const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience-preview.mp4");
   const [media, setMedia] = useState<Photo[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(true);
+  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
 
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sending, setSending] = useState(false);
@@ -94,6 +115,16 @@ export default function ExperiencesContent() {
       active = false;
     };
   }, [activeActivity.section]);
+
+  // Cerrar el lightbox con Escape
+  useEffect(() => {
+    if (!lightboxPhoto) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxPhoto(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [lightboxPhoto]);
 
   const activityVideo = media.find((p) => isVideoUrl(p.url));
   const activityPhotos = media.filter((p) => !isVideoUrl(p.url));
@@ -144,19 +175,21 @@ export default function ExperiencesContent() {
         <Navbar />
 
         <div className="flex-1 flex flex-col justify-center max-w-4xl">
-          <p className="text-xs font-semibold tracking-widest uppercase text-teal-300 mb-3">
-            Experiences
-          </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
-            Live Los Cabos like a local
-          </h1>
+          <FadeIn>
+            <p className="text-xs font-semibold tracking-widest uppercase text-teal-300 mb-3">
+              Experiences
+            </p>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
+              Live Los Cabos like a local
+            </h1>
+          </FadeIn>
         </div>
       </section>
 
       {/* Selector dinámico de actividad (solo 3 opciones) */}
       <section className="py-16 md:py-24 bg-white px-4 sm:px-6 md:px-10 lg:px-20">
         <div className="max-w-5xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+          <Reveal className="flex flex-wrap justify-center gap-3 mb-12">
             {ACTIVITIES.map((activity) => (
               <button
                 key={activity.key}
@@ -170,46 +203,61 @@ export default function ExperiencesContent() {
                 {activity.label}
               </button>
             ))}
+          </Reveal>
+
+          {/* Todo lo que depende de la actividad activa se remonta con
+              key={activeKey} para que el fade se dispare en cada cambio
+              de pestaña, no solo la primera vez que entra en pantalla. */}
+          <div key={activeKey}>
+            {/* Video de la actividad (si el admin subió uno) */}
+            {activityVideo && (
+              <FadeIn className="rounded-2xl overflow-hidden shadow-lg aspect-video mb-8">
+                <video
+                  key={activityVideo.url}
+                  src={activityVideo.url}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              </FadeIn>
+            )}
+
+            {/* Descripción de la actividad */}
+            <FadeIn delay={80}>
+              <p className="text-gray-600 leading-relaxed text-center max-w-2xl mx-auto mb-10">
+                {activeActivity.description}
+              </p>
+            </FadeIn>
+
+            {/* Fotos de la actividad */}
+            {loadingMedia ? (
+              <PhotoSkeleton />
+            ) : (
+              activityPhotos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
+                  {activityPhotos.map((photo, idx) => (
+                    <FadeIn key={photo.id} delay={120 + idx * 60}>
+                      <button
+                        onClick={() => setLightboxPhoto(photo)}
+                        className="group relative aspect-square w-full rounded-xl overflow-hidden bg-gray-100"
+                        aria-label={`Expand photo: ${photo.caption || activeActivity.label}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.url}
+                          alt={photo.caption || activeActivity.label}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </button>
+                    </FadeIn>
+                  ))}
+                </div>
+              )
+            )}
           </div>
 
-          {/* Video de la actividad (si el admin subió uno) */}
-          {activityVideo && (
-            <div className="rounded-2xl overflow-hidden shadow-lg aspect-video mb-8">
-              <video
-                key={activityVideo.url}
-                src={activityVideo.url}
-                controls
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          {/* Descripción de la actividad */}
-          <p className="text-gray-600 leading-relaxed text-center max-w-2xl mx-auto mb-10">
-            {activeActivity.description}
-          </p>
-
-          {/* Fotos de la actividad */}
-          {!loadingMedia && activityPhotos.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
-              {activityPhotos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className="relative aspect-square rounded-xl overflow-hidden bg-gray-100"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt={photo.caption || activeActivity.label}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Formulario de contacto */}
-          <div className="max-w-xl mx-auto bg-gray-50 rounded-2xl p-8">
+          <Reveal className="max-w-xl mx-auto bg-gray-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-1">
               Interested in {activeActivity.label}?
             </h2>
@@ -261,9 +309,32 @@ export default function ExperiencesContent() {
                 </button>
               </form>
             )}
-          </div>
+          </Reveal>
         </div>
       </section>
+
+      {/* Lightbox: clic en una foto la muestra en grande */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            onClick={() => setLightboxPhoto(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          >
+            <CloseIcon className="w-5 h-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxPhoto.url}
+            alt={lightboxPhoto.caption || activeActivity.label}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      )}
 
       <Footer />
       <FloatingContactButtons />
