@@ -75,7 +75,7 @@ export default function ExperiencesContent() {
     ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "fishing"
   );
 
-  const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience-preview.mp4");
+  const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience.mp4");
   const [media, setMedia] = useState<Photo[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
