@@ -1,7 +1,7 @@
 // app/experiences/ExperiencesContent.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
@@ -15,12 +15,14 @@ type Photo = {
   caption: string | null;
 };
 
+type MediaType = "image" | "gif" | "video";
+
 type ActivityKey = "fishing" | "boats" | "tours";
 
 // Descripciones fijas en código (no editables desde el admin por ahora
-// — si quieres que lo sean, lo movemos a un campo editable). Las fotos
-// y el video de cada actividad SÍ son dinámicos, vía /admin/photos con
-// las secciones "activity-fishing" / "activity-boats" / "activity-tours".
+// — si quieres que lo sean, lo movemos a un campo editable). La media
+// de cada actividad SÍ es dinámica, vía /admin/photos con las
+// secciones "activity-fishing" / "activity-boats" / "activity-tours".
 const ACTIVITIES: { key: ActivityKey; label: string; section: string; description: string }[] = [
   {
     key: "fishing",
@@ -45,8 +47,10 @@ const ACTIVITIES: { key: ActivityKey; label: string; section: string; descriptio
   },
 ];
 
-function isVideoUrl(url: string) {
-  return /\.(mp4|webm|mov)$/i.test(url);
+function getMediaType(url: string): MediaType {
+  if (/\.(mp4|webm|mov)$/i.test(url)) return "video";
+  if (/\.gif$/i.test(url)) return "gif";
+  return "image";
 }
 
 function CloseIcon({ className }: { className?: string }) {
@@ -58,11 +62,57 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
-function PhotoSkeleton() {
+function ChevronIcon({ className, direction = "right" }: { className?: string; direction?: "left" | "right" }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="aspect-square rounded-xl bg-gray-100 animate-pulse" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={direction === "left" ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <polyline points="9 6 15 12 9 18" />
+    </svg>
+  );
+}
+
+function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+/* Miniatura del carrusel: imagen y GIF se muestran con <img> (el GIF
+   se anima solo); el video muestra el primer frame, pausado, con un
+   ícono de play encima — se reproduce completo al abrir el lightbox. */
+function MediaThumb({ item, alt }: { item: Photo; alt: string }) {
+  const type = getMediaType(item.url);
+  if (type === "video") {
+    return (
+      <div className="relative w-full h-full">
+        <video src={item.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/35 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+            <PlayIcon className="w-4 h-4 text-gray-900 ml-0.5" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={item.url} alt={alt} className="w-full h-full object-cover" />;
+}
+
+function CarouselSkeleton() {
+  return (
+    <div className="flex gap-3 mb-16 overflow-hidden">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 rounded-xl bg-gray-100 animate-pulse" />
       ))}
     </div>
   );
@@ -75,10 +125,11 @@ export default function ExperiencesContent() {
     ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "fishing"
   );
 
-  const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience.mp4");
+  const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience-preview.mp4");
   const [media, setMedia] = useState<Photo[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(true);
-  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<Photo | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
 
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sending, setSending] = useState(false);
@@ -92,13 +143,14 @@ export default function ExperiencesContent() {
     fetch("/api/photos?section=experiences-hero")
       .then((res) => res.json())
       .then((data: Photo[]) => {
-        const video = data.find((p) => isVideoUrl(p.url));
+        const video = data.find((p) => getMediaType(p.url) === "video");
         if (video) setHeroVideoUrl(video.url);
       })
       .catch((err) => console.error("Error cargando hero de Experiences:", err));
   }, []);
 
-  // Media (video + fotos) de la actividad seleccionada
+  // Media (fotos, gifs y video) de la actividad seleccionada — todo
+  // vive en un solo carrusel que cambia según la pestaña activa.
   useEffect(() => {
     let active = true;
     setLoadingMedia(true);
@@ -118,16 +170,19 @@ export default function ExperiencesContent() {
 
   // Cerrar el lightbox con Escape
   useEffect(() => {
-    if (!lightboxPhoto) return;
+    if (!lightboxItem) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightboxPhoto(null);
+      if (e.key === "Escape") setLightboxItem(null);
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [lightboxPhoto]);
+  }, [lightboxItem]);
 
-  const activityVideo = media.find((p) => isVideoUrl(p.url));
-  const activityPhotos = media.filter((p) => !isVideoUrl(p.url));
+  const scrollCarousel = (dir: 1 | -1) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,7 +245,7 @@ export default function ExperiencesContent() {
       {/* Selector dinámico de actividad (solo 3 opciones) */}
       <section className="py-16 md:py-24 bg-white px-4 sm:px-6 md:px-10 lg:px-20">
         <div className="max-w-5xl mx-auto">
-          <Reveal className="flex flex-wrap justify-center gap-3 mb-12">
+          <Reveal className="flex flex-wrap justify-center gap-3 mb-10">
             {ACTIVITIES.map((activity) => (
               <button
                 key={activity.key}
@@ -210,55 +265,58 @@ export default function ExperiencesContent() {
               key={activeKey} para que el fade se dispare en cada cambio
               de pestaña, no solo la primera vez que entra en pantalla. */}
           <div key={activeKey}>
-            {/* Video de la actividad (si el admin subió uno) */}
-            {activityVideo && (
-              <FadeIn className="rounded-2xl overflow-hidden shadow-lg aspect-video mb-8">
-                <video
-                  key={activityVideo.url}
-                  src={activityVideo.url}
-                  controls
-                  className="w-full h-full object-cover"
-                />
-              </FadeIn>
-            )}
-
             {/* Descripción de la actividad */}
-            <FadeIn delay={80}>
-              <p className="text-gray-600 leading-relaxed text-center max-w-2xl mx-auto mb-10">
+            <FadeIn>
+              <p className="text-gray-600 leading-relaxed text-center max-w-2xl mx-auto mb-8">
                 {activeActivity.description}
               </p>
             </FadeIn>
 
-            {/* Fotos de la actividad */}
+            {/* Carrusel de media: fotos, gifs y video, en el orden que
+                venga del admin. Soporta swipe en móvil y flechas en
+                desktop. */}
             {loadingMedia ? (
-              <PhotoSkeleton />
+              <CarouselSkeleton />
             ) : (
-              activityPhotos.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
-                  {activityPhotos.map((photo, idx) => (
-                    <FadeIn key={photo.id} delay={120 + idx * 60}>
+              media.length > 0 && (
+                <FadeIn delay={80} className="relative mb-16">
+                  <button
+                    onClick={() => scrollCarousel(-1)}
+                    aria-label="Previous media"
+                    className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition"
+                  >
+                    <ChevronIcon className="w-5 h-5" direction="left" />
+                  </button>
+                  <button
+                    onClick={() => scrollCarousel(1)}
+                    aria-label="Next media"
+                    className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition"
+                  >
+                    <ChevronIcon className="w-5 h-5" />
+                  </button>
+
+                  <div
+                    ref={carouselRef}
+                    className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  >
+                    {media.map((item) => (
                       <button
-                        onClick={() => setLightboxPhoto(photo)}
-                        className="group relative aspect-square w-full rounded-xl overflow-hidden bg-gray-100"
-                        aria-label={`Expand photo: ${photo.caption || activeActivity.label}`}
+                        key={item.id}
+                        onClick={() => setLightboxItem(item)}
+                        className="group relative aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 snap-center rounded-xl overflow-hidden bg-gray-100"
+                        aria-label={`Expand: ${item.caption || activeActivity.label}`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.url}
-                          alt={photo.caption || activeActivity.label}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        <MediaThumb item={item} alt={item.caption || activeActivity.label} />
                       </button>
-                    </FadeIn>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </FadeIn>
               )
             )}
           </div>
 
           {/* Formulario de contacto */}
-          <Reveal className="max-w-xl mx-auto bg-gray-50 rounded-2xl p-8">
+          <Reveal className="max-w-2xl mx-auto bg-gray-50 rounded-2xl p-10">
             <h2 className="text-xl font-bold text-gray-900 mb-1">
               Interested in {activeActivity.label}?
             </h2>
@@ -314,26 +372,38 @@ export default function ExperiencesContent() {
         </div>
       </section>
 
-      {/* Lightbox: clic en una foto la muestra en grande */}
-      {lightboxPhoto && (
+      {/* Lightbox: clic en un elemento de media lo muestra en grande,
+          reproduciendo el video completo si aplica. */}
+      {lightboxItem && (
         <div
           className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setLightboxPhoto(null)}
+          onClick={() => setLightboxItem(null)}
         >
           <button
-            onClick={() => setLightboxPhoto(null)}
+            onClick={() => setLightboxItem(null)}
             aria-label="Close"
             className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
           >
             <CloseIcon className="w-5 h-5" />
           </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightboxPhoto.url}
-            alt={lightboxPhoto.caption || activeActivity.label}
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-full object-contain rounded-lg"
-          />
+          {getMediaType(lightboxItem.url) === "video" ? (
+            <video
+              src={lightboxItem.url}
+              controls
+              autoPlay
+              playsInline
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-full rounded-lg"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={lightboxItem.url}
+              alt={lightboxItem.caption || activeActivity.label}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          )}
         </div>
       )}
 
