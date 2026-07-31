@@ -1,7 +1,7 @@
 // app/experiences/ExperiencesContent.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
@@ -16,53 +16,49 @@ type Photo = {
 };
 
 type MediaType = "image" | "gif" | "video";
-
 type ActivityKey = "fishing" | "boats" | "tours";
 
-// Descripciones fijas en código (no editables desde el admin por ahora
-// — si quieres que lo sean, lo movemos a un campo editable). La media
-// de cada actividad SÍ es dinámica, vía /admin/photos con las
-// secciones "activity-fishing" / "activity-boats" / "activity-tours".
-const ACTIVITIES: { key: ActivityKey; label: string; section: string; description: string }[] = [
-  {
-    key: "fishing",
-    label: "Fishing",
-    section: "activity-fishing",
-    description:
-      "Chase marlin, dorado, and tuna in the legendary waters where the Pacific meets the Sea of Cortez. Our experienced captains know exactly where the fish are biting, whether you're a first-timer or a seasoned angler.",
-  },
-  {
-    key: "boats",
-    label: "Boats & Yachts",
-    section: "activity-boats",
-    description:
-      "Cruise past the iconic Arch of Cabo San Lucas aboard a private yacht or boat, with snorkeling stops, sunset views, and refreshments on board — perfect for celebrations or a relaxed day on the water.",
-  },
-  {
-    key: "tours",
-    label: "Activities & Tours",
-    section: "activity-tours",
-    description:
-      "From ATV desert adventures to whale watching and city tours, discover the best of Los Cabos with a local guide by your side who knows every hidden gem.",
-  },
-];
-
-function getMediaType(url: string): MediaType {
-  if (/\.(mp4|webm|mov)$/i.test(url)) return "video";
-  if (/\.gif$/i.test(url)) return "gif";
-  return "image";
-}
-
-function CloseIcon({ className }: { className?: string }) {
+/* ---------- iconos de cada actividad — refuerzan qué representa cada
+   pestaña del fichero, no son decoración ---------- */
+function FishIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12s3.5-5 9-5 8 3 9 5c-1 2-3.5 5-9 5s-8-3-9-5z" />
+      <path d="M19 9.5l2.5-2M19 14.5l2.5 2" />
+      <circle cx="8.5" cy="11" r="0.9" fill="currentColor" stroke="none" />
     </svg>
   );
 }
 
-function ChevronIcon({ className, direction = "right" }: { className?: string; direction?: "left" | "right" }) {
+function AnchorIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="5" r="2" />
+      <path d="M12 7v13" />
+      <path d="M5 12H2c0 4.5 4.5 8 10 8s10-3.5 10-8h-3" />
+      <path d="M8 9l4 3 4-3" />
+    </svg>
+  );
+}
+
+function CompassIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15 9l-2 5-4 1 2-5z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+function ChevronArrow({ className, direction = "right" }: { className?: string; direction?: "left" | "right" }) {
   return (
     <svg
       className={className}
@@ -79,12 +75,64 @@ function ChevronIcon({ className, direction = "right" }: { className?: string; d
   );
 }
 
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 function PlayIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M8 5v14l11-7z" />
     </svg>
   );
+}
+
+// Descripciones fijas en código (no editables desde el admin por ahora
+// — si quieres que lo sean, lo movemos a un campo editable). La media
+// de cada actividad SÍ es dinámica, vía /admin/photos con las
+// secciones "activity-fishing" / "activity-boats" / "activity-tours".
+const ACTIVITIES: {
+  key: ActivityKey;
+  label: string;
+  section: string;
+  description: string;
+  Icon: ComponentType<{ className?: string }>;
+}[] = [
+  {
+    key: "fishing",
+    label: "Fishing",
+    section: "activity-fishing",
+    description:
+      "Chase marlin, dorado, and tuna in the legendary waters where the Pacific meets the Sea of Cortez. Our experienced captains know exactly where the fish are biting, whether you're a first-timer or a seasoned angler.",
+    Icon: FishIcon,
+  },
+  {
+    key: "boats",
+    label: "Boats & Yachts",
+    section: "activity-boats",
+    description:
+      "Cruise past the iconic Arch of Cabo San Lucas aboard a private yacht or boat, with snorkeling stops, sunset views, and refreshments on board — perfect for celebrations or a relaxed day on the water.",
+    Icon: AnchorIcon,
+  },
+  {
+    key: "tours",
+    label: "Activities & Tours",
+    section: "activity-tours",
+    description:
+      "From ATV desert adventures to whale watching and city tours, discover the best of Los Cabos with a local guide by your side who knows every hidden gem.",
+    Icon: CompassIcon,
+  },
+];
+
+function getMediaType(url: string): MediaType {
+  if (/\.(mp4|webm|mov)$/i.test(url)) return "video";
+  if (/\.gif$/i.test(url)) return "gif";
+  return "image";
 }
 
 /* Miniatura del carrusel: imagen y GIF se muestran con <img> (el GIF
@@ -110,9 +158,9 @@ function MediaThumb({ item, alt }: { item: Photo; alt: string }) {
 
 function CarouselSkeleton() {
   return (
-    <div className="flex gap-3 mb-16 overflow-hidden">
+    <div className="flex gap-3 overflow-hidden">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 rounded-xl bg-gray-100 animate-pulse" />
+        <div key={i} className="aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 rounded-xl bg-black/5 animate-pulse" />
       ))}
     </div>
   );
@@ -136,7 +184,8 @@ export default function ExperiencesContent() {
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState("");
 
-  const activeActivity = ACTIVITIES.find((a) => a.key === activeKey)!;
+  const activeIndex = ACTIVITIES.findIndex((a) => a.key === activeKey);
+  const activeActivity = ACTIVITIES[activeIndex];
 
   // Video del hero: editable desde /admin/photos, sección "experiences-hero"
   useEffect(() => {
@@ -211,8 +260,8 @@ export default function ExperiencesContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* HERO con video de fondo */}
-      <section className="relative min-h-[70vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
+      {/* ---------- HERO ---------- */}
+      <section className="relative min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
         <div className="absolute inset-0 -z-10">
           <video
             key={heroVideoUrl}
@@ -225,74 +274,92 @@ export default function ExperiencesContent() {
             onError={(e) => console.error("No se pudo cargar el video del hero:", heroVideoUrl, e)}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         </div>
 
         <Navbar />
 
         <div className="flex-1 flex flex-col justify-center max-w-4xl">
           <FadeIn>
-            <p className="text-xs font-semibold tracking-widest uppercase text-teal-300 mb-3">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-teal-300 mb-4">
               Experiences
             </p>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
-              Live Los Cabos like a local
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] mb-5">
+              Live Los Cabos
+              <br />
+              like a local
             </h1>
+            <p className="text-white/70 text-base md:text-lg max-w-md">
+              Three ways in. Pick one below and see exactly what your day could look like.
+            </p>
           </FadeIn>
         </div>
+
+        <FadeIn delay={300} className="flex justify-center pb-4">
+          <ChevronDown className="w-6 h-6 text-white/50 animate-bounce" />
+        </FadeIn>
       </section>
 
-      {/* Selector dinámico de actividad (solo 3 opciones) */}
+      {/* ---------- SELECTOR DE ACTIVIDADES — estilo fichero ---------- */}
       <section className="py-16 md:py-24 bg-white px-4 sm:px-6 md:px-10 lg:px-20">
-        <div className="max-w-5xl mx-auto">
-          <Reveal className="flex flex-wrap justify-center gap-3 mb-10">
-            {ACTIVITIES.map((activity) => (
-              <button
-                key={activity.key}
-                onClick={() => setActiveKey(activity.key)}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition ${
-                  activeKey === activity.key
-                    ? "bg-teal-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {activity.label}
-              </button>
-            ))}
-          </Reveal>
+        <Reveal className="max-w-5xl mx-auto">
+          {/* Pestañas — la activa se eleva y se conecta con el cuerpo;
+              las demás quedan detrás, como en un fichero real. */}
+          <div className="flex items-end gap-1.5 sm:gap-2 px-1">
+            {ACTIVITIES.map((activity, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <button
+                  key={activity.key}
+                  onClick={() => setActiveKey(activity.key)}
+                  aria-pressed={isActive}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-t-2xl transition-all duration-300 ${
+                    isActive
+                      ? "bg-[#FBF7F0] text-gray-900 py-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] z-20"
+                      : "bg-[#EDEAE3] text-gray-400 py-3 translate-y-1 hover:bg-[#E4E0D6] hover:text-gray-600 z-10"
+                  }`}
+                >
+                  <activity.Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${isActive ? "text-teal-600" : ""}`} />
+                  <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">
+                    {activity.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Todo lo que depende de la actividad activa se remonta con
-              key={activeKey} para que el fade se dispare en cada cambio
-              de pestaña, no solo la primera vez que entra en pantalla. */}
-          <div key={activeKey}>
-            {/* Descripción de la actividad */}
-            <FadeIn>
-              <p className="text-gray-600 leading-relaxed text-center max-w-2xl mx-auto mb-8">
-                {activeActivity.description}
-              </p>
-            </FadeIn>
+          {/* Cuerpo del fichero */}
+          <div className="bg-[#FBF7F0] rounded-b-2xl rounded-tr-2xl -mt-px shadow-[0_-4px_16px_rgba(0,0,0,0.06)] p-6 sm:p-8 md:p-12">
+            {/* Todo lo que depende de la actividad activa se remonta
+                con key={activeKey} para que la animación se dispare en
+                cada cambio, no solo la primera vez que entra en pantalla. */}
+            <div key={activeKey}>
+              <FadeIn className="mb-6">
+                <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-teal-600">
+                  Now exploring — {activeActivity.label}
+                </p>
+              </FadeIn>
 
-            {/* Carrusel de media: fotos, gifs y video, en el orden que
-                venga del admin. Soporta swipe en móvil y flechas en
-                desktop. */}
-            {loadingMedia ? (
-              <CarouselSkeleton />
-            ) : (
-              media.length > 0 && (
-                <FadeIn delay={80} className="relative mb-16">
+              {/* Carrusel de media: fotos, gifs y video, en el orden
+                  que venga del admin. Soporta swipe en móvil y flechas
+                  en desktop. */}
+              {loadingMedia ? (
+                <CarouselSkeleton />
+              ) : media.length > 0 ? (
+                <FadeIn delay={80} className="relative mb-8">
                   <button
                     onClick={() => scrollCarousel(-1)}
                     aria-label="Previous media"
                     className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition"
                   >
-                    <ChevronIcon className="w-5 h-5" direction="left" />
+                    <ChevronArrow className="w-5 h-5" direction="left" />
                   </button>
                   <button
                     onClick={() => scrollCarousel(1)}
                     aria-label="Next media"
                     className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition"
                   >
-                    <ChevronIcon className="w-5 h-5" />
+                    <ChevronArrow className="w-5 h-5" />
                   </button>
 
                   <div
@@ -303,7 +370,7 @@ export default function ExperiencesContent() {
                       <button
                         key={item.id}
                         onClick={() => setLightboxItem(item)}
-                        className="group relative aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 snap-center rounded-xl overflow-hidden bg-gray-100"
+                        className="group relative aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 snap-center rounded-xl overflow-hidden bg-black/5"
                         aria-label={`Expand: ${item.caption || activeActivity.label}`}
                       >
                         <MediaThumb item={item} alt={item.caption || activeActivity.label} />
@@ -311,69 +378,75 @@ export default function ExperiencesContent() {
                     ))}
                   </div>
                 </FadeIn>
-              )
-            )}
+              ) : null}
+
+              {/* Descripción breve, dinámica por actividad */}
+              <FadeIn delay={140}>
+                <p className="text-gray-600 leading-relaxed max-w-2xl">
+                  {activeActivity.description}
+                </p>
+              </FadeIn>
+            </div>
           </div>
+        </Reveal>
 
-          {/* Formulario de contacto */}
-          <Reveal className="max-w-2xl mx-auto bg-gray-50 rounded-2xl p-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              Interested in {activeActivity.label}?
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Leave us your details and we'll get back to you shortly.
-            </p>
+        {/* ---------- FORMULARIO ---------- */}
+        <Reveal className="max-w-2xl mx-auto mt-16 bg-gray-50 rounded-2xl p-8 sm:p-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">
+            Interested in {activeActivity.label}?
+          </h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Leave us your details and we'll get back to you shortly.
+          </p>
 
-            {sent ? (
-              <div className="bg-teal-50 border border-teal-100 text-teal-700 rounded-xl p-4 text-sm">
-                Thanks! We received your message and will be in touch soon.
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {sendError && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">
-                    {sendError}
-                  </div>
-                )}
-                <input
-                  required
-                  type="text"
-                  placeholder="Your name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-                />
-                <input
-                  required
-                  type="email"
-                  placeholder="Your email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-                />
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Tell us about your plans..."
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-                />
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
-                >
-                  {sending ? "Sending..." : "Send Message"}
-                </button>
-              </form>
-            )}
-          </Reveal>
-        </div>
+          {sent ? (
+            <div className="bg-teal-50 border border-teal-100 text-teal-700 rounded-xl p-4 text-sm">
+              Thanks! We received your message and will be in touch soon.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {sendError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">
+                  {sendError}
+                </div>
+              )}
+              <input
+                required
+                type="text"
+                placeholder="Your name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+              />
+              <input
+                required
+                type="email"
+                placeholder="Your email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+              />
+              <textarea
+                required
+                rows={4}
+                placeholder="Tell us about your plans..."
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+              />
+              <button
+                type="submit"
+                disabled={sending}
+                className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
+              >
+                {sending ? "Sending..." : "Send Message"}
+              </button>
+            </form>
+          )}
+        </Reveal>
       </section>
 
-      {/* Lightbox: clic en un elemento de media lo muestra en grande,
-          reproduciendo el video completo si aplica. */}
+      {/* ---------- LIGHTBOX ---------- */}
       {lightboxItem && (
         <div
           className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
