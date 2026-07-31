@@ -167,6 +167,7 @@ export default function ExperiencesContent() {
             loop
             playsInline
             preload="auto"
+            onError={(e) => console.error("No se pudo cargar el video del hero:", heroVideoUrl, e)}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/50" />
