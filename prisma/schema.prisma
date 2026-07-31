@@ -28,18 +28,18 @@ model Zone {
 // Vehículos
 // ----------------------
 model Vehicle {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique   // "SUV", "VAN", "SPRINTER", etc.
-  capacity  Int                 // número máximo de pasajeros
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  capacity    Int
+  active      Boolean  @default(true)
+  image       String?
+  annotations String?  @db.Text
+  description String?  @db.Text  // descripción larga para la página "Our Fleet"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  prices       Price[]
-  popularTransfers PopularTransfer[] // una relación uno a muchos (opcional)
-
-  image String?
-  annotations String? @db.Text
+  prices           Price[]
+  popularTransfers PopularTransfer[]
 }
 
 // ----------------------

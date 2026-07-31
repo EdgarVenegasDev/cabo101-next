@@ -20,6 +20,10 @@ const SECTION_OPTIONS = [
   { value: "popular-transfers", label: "Popular Transfers" },
   { value: "testimonials-avatars", label: "Testimonials Avatars" },
   { value: "our-team", label: "Our Team (fotos y videos)" },
+  { value: "experiences-hero", label: "Experiences: Hero (video)" },
+  { value: "activity-fishing", label: "Experiences: Fishing" },
+  { value: "activity-boats", label: "Experiences: Boats & Yachts" },
+  { value: "activity-tours", label: "Experiences: Activities & Tours" },
   { value: "gallery", label: "Galería" },
 ];
 
@@ -65,7 +69,6 @@ export default function PhotosPage() {
       return;
     }
 
-    // Mostrar tamaño para depuración
     console.log(`Subiendo archivo de ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
 
     setLoading(true);
@@ -80,7 +83,6 @@ export default function PhotosPage() {
         body: formData,
       });
 
-      // Si la respuesta no es JSON, puede ser HTML de error (por ejemplo, 413)
       const contentType = uploadRes.headers.get("content-type") || "";
       let errorMessage = "Error desconocido";
 
@@ -95,7 +97,6 @@ export default function PhotosPage() {
           const errorData = await uploadRes.json();
           errorMessage = errorData.error || "Error al subir el archivo";
         } catch (parseError) {
-          // Si no es JSON, intentamos leer el texto
           const text = await uploadRes.text();
           errorMessage = `Error ${uploadRes.status}: ${text.substring(0, 100)}`;
         }
@@ -106,7 +107,6 @@ export default function PhotosPage() {
 
       const data = await uploadRes.json();
 
-      // Guardar en BD
       const saveRes = await fetch("/api/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -12,6 +12,7 @@ interface Vehicle {
   active: boolean;
   image?: string | null;
   annotations?: string | null;
+  description?: string | null;
 }
 
 type FormState = {
@@ -20,9 +21,17 @@ type FormState = {
   active: boolean;
   image: string;
   annotations: string;
+  description: string;
 };
 
-const emptyForm: FormState = { name: "", capacity: "", active: true, image: "", annotations: "" };
+const emptyForm: FormState = {
+  name: "",
+  capacity: "",
+  active: true,
+  image: "",
+  annotations: "",
+  description: "",
+};
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -104,6 +113,7 @@ export default function VehiclesPage() {
           active: form.active,
           image: finalImage || null,
           annotations: form.annotations.trim() || null,
+          description: form.description.trim() || null,
         }),
       });
 
@@ -127,6 +137,7 @@ export default function VehiclesPage() {
       active: vehicle.active,
       image: vehicle.image || "",
       annotations: vehicle.annotations || "",
+      description: vehicle.description || "",
     });
     setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -145,8 +156,6 @@ export default function VehiclesPage() {
     }
   };
 
-  // Lista de anotaciones (una por línea) para mostrar como pills en la
-  // lista de vehículos de abajo.
   const parseAnnotations = (raw?: string | null) =>
     (raw || "")
       .split("\n")
@@ -161,7 +170,7 @@ export default function VehiclesPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tipos de vehículo</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Administra los vehículos disponibles, su capacidad, foto y anotaciones.
+            Administra los vehículos disponibles, su capacidad, foto, anotaciones y descripción.
           </p>
         </div>
 
@@ -241,7 +250,7 @@ export default function VehiclesPage() {
             {/* Anotaciones libres */}
             <div className="md:col-span-3 flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-500">
-                Anotaciones (una por línea)
+                Anotaciones (una por línea, se muestran como etiquetas cortas en la reserva)
               </label>
               <textarea
                 rows={3}
@@ -250,9 +259,20 @@ export default function VehiclesPage() {
                 onChange={(e) => setForm({ ...form, annotations: e.target.value })}
                 className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition font-mono"
               />
-              <span className="text-[11px] text-gray-400">
-                Cada línea aparece como una etiqueta separada junto al vehículo en el paso de reserva.
-              </span>
+            </div>
+
+            {/* Descripción larga (Our Fleet) */}
+            <div className="md:col-span-3 flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">
+                Descripción detallada (se muestra en la página "Our Fleet")
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Ej. Nuestra SUV es ideal para grupos pequeños que buscan comodidad y estilo..."
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+              />
             </div>
           </div>
           <div className="flex gap-2 mt-5">
@@ -324,6 +344,11 @@ export default function VehiclesPage() {
                             </span>
                           ))}
                         </div>
+                      )}
+                      {vehicle.description && (
+                        <p className="text-xs text-gray-400 mt-2 max-w-md line-clamp-2">
+                          {vehicle.description}
+                        </p>
                       )}
                     </div>
                   </div>

@@ -2,10 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
-// Coordenadas de Los Cabos (Cabo San Lucas) para el clima. Open-Meteo es
-// una API pública y gratuita, sin necesidad de API key — se puede
-// consumir directamente desde el cliente sin exponer ningún secreto.
 const WEATHER_LAT = 22.8905;
 const WEATHER_LON = -109.9167;
 const WEATHER_URL =
@@ -15,8 +13,6 @@ const WEATHER_URL =
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Íconos en SVG (no emoji): el carácter ☀ se veía distinto/mal en varios
-// sistemas móviles — un SVG propio se ve igual en todas partes.
 function SunIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -70,8 +66,6 @@ function ChevronDownIcon({ className }) {
   );
 }
 
-// Traduce el weather_code de Open-Meteo (estándar WMO) a un ícono y
-// etiqueta simple.
 function getWeatherInfo(code) {
   if (code === 0) return { label: "Clear", Icon: SunIcon };
   if (code === 1 || code === 2) return { label: "Partly cloudy", Icon: CloudSunIcon };
@@ -86,7 +80,7 @@ function getWeatherInfo(code) {
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState(null); // "about" | "activities" | "weather" | null
+  const [activeMenu, setActiveMenu] = useState(null);
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
@@ -101,7 +95,6 @@ export default function Navbar() {
     setActiveMenu(null);
   };
 
-  // Cierra cualquier dropdown abierto si se hace clic fuera del navbar
   useEffect(() => {
     function handleClickOutside(e) {
       if (navRef.current && !navRef.current.contains(e.target)) {
@@ -112,8 +105,6 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Consulta el clima cada vez que se abre el dropdown, para que sea
-  // realmente "en tiempo real" y no una foto vieja cacheada.
   useEffect(() => {
     if (activeMenu !== "weather") return;
     setWeatherLoading(true);
@@ -134,7 +125,7 @@ export default function Navbar() {
     <div ref={navRef} className="relative z-50 flex justify-between items-center mb-12 text-white">
 
       {/* Logo */}
-      <div>
+      <Link href="/" className="flex-shrink-0">
         <Image
           src="/images/logo3.png"
           alt="Cabo 101"
@@ -142,7 +133,7 @@ export default function Navbar() {
           height={45}
           className="object-contain"
         />
-      </div>
+      </Link>
 
       {/* Botón de Hamburguesa */}
       <button
@@ -155,8 +146,6 @@ export default function Navbar() {
         <span className={`h-0.5 w-6 bg-white rounded transition-transform duration-300 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
       </button>
 
-      {/* Fondo de apoyo al abrir la barra: antes era bg-black/40 (oscuro);
-          ahora es casi transparente y de tonalidad blanca, más elegante. */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-white/10 backdrop-blur-[2px] z-30 min-[901px]:hidden"
@@ -174,10 +163,31 @@ export default function Navbar() {
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <a href="#" onClick={closeAll} className="hover:text-[#4ccb8c] transition">Home</a>
-        <a href="#" onClick={closeAll} className="hover:text-[#4ccb8c] transition">Experiences</a>
+        <Link href="/" onClick={closeAll} className="hover:text-[#4ccb8c] transition">Home</Link>
+        <Link href="/experiences" onClick={closeAll} className="hover:text-[#4ccb8c] transition">Experiences</Link>
 
-        {/* About us (con dropdown nuevo) */}
+        {/* Activities (dropdown) — enlaza directo a la actividad
+            correspondiente dentro de /experiences */}
+        <div className="relative w-full min-[901px]:w-auto">
+          <button
+            onClick={() => toggleMenu("activities")}
+            className="flex items-center gap-1.5 hover:text-[#4ccb8c] transition w-full min-[901px]:w-auto"
+          >
+            Activities
+            <ChevronDownIcon
+              className={`w-4 h-4 transition-transform ${activeMenu === "activities" ? "rotate-180" : ""}`}
+            />
+          </button>
+          {activeMenu === "activities" && (
+            <div className="mt-3 flex flex-col gap-3 pl-4 border-l border-white/20 min-[901px]:absolute min-[901px]:top-full min-[901px]:left-0 min-[901px]:mt-3 min-[901px]:pl-0 min-[901px]:border-l-0 min-[901px]:bg-black/95 min-[901px]:rounded-xl min-[901px]:p-4 min-[901px]:w-52 min-[901px]:shadow-xl">
+              <Link href="/experiences?activity=fishing" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Fishing</Link>
+              <Link href="/experiences?activity=boats" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Boats &amp; Yachts</Link>
+              <Link href="/experiences?activity=tours" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Activities &amp; Tours</Link>
+            </div>
+          )}
+        </div>
+
+        {/* About us (dropdown) */}
         <div className="relative w-full min-[901px]:w-auto">
           <button
             onClick={() => toggleMenu("about")}
@@ -190,16 +200,15 @@ export default function Navbar() {
           </button>
           {activeMenu === "about" && (
             <div className="mt-3 flex flex-col gap-3 pl-4 border-l border-white/20 min-[901px]:absolute min-[901px]:top-full min-[901px]:left-0 min-[901px]:mt-3 min-[901px]:pl-0 min-[901px]:border-l-0 min-[901px]:bg-black/95 min-[901px]:rounded-xl min-[901px]:p-4 min-[901px]:w-48 min-[901px]:shadow-xl">
-              <a href="#" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Our Fleet</a>
-              <a href="#" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Our Company</a>
+              <Link href="/our-fleet" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Our Fleet</Link>
+              <Link href="/our-company" onClick={closeAll} className="text-base text-white/80 hover:text-[#4ccb8c] transition">Our Company</Link>
             </div>
           )}
         </div>
 
         <a href="#" onClick={closeAll} className="hover:text-[#4ccb8c] transition">Contact</a>
 
-        {/* Clima de Los Cabos: botón con ícono SVG + dropdown con el
-            pronóstico real de 7 días (Open-Meteo, sin API key). */}
+        {/* Clima de Los Cabos */}
         <div className="relative w-full min-[901px]:w-auto">
           <button
             onClick={() => toggleMenu("weather")}
