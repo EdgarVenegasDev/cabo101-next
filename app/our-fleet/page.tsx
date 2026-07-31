@@ -1,7 +1,7 @@
 // app/our-fleet/page.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
 import FloatingContactButtons from "@/components/FloatingContactButtons";
@@ -15,10 +15,6 @@ type ApiVehicle = {
   image?: string | null;
   description?: string | null;
 };
-
-// Ancho de cada tarjeta del carrusel — se usa también para calcular el
-// padding lateral que permite centrar la primera y la última tarjeta.
-const CARD_WIDTH = 280;
 
 function ChevronIcon({
   className,
@@ -45,14 +41,14 @@ function ChevronIcon({
 
 function FleetSkeleton() {
   return (
-    <div className="flex items-center justify-center gap-8 py-6">
+    <div className="flex items-center justify-center gap-6 py-6">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
           className={`flex-shrink-0 animate-pulse ${i === 1 ? "" : "scale-75 opacity-50"}`}
-          style={{ width: CARD_WIDTH }}
+          style={{ width: 260 }}
         >
-          <div className="rounded-2xl bg-gray-100 h-48" />
+          <div className="rounded-2xl bg-gray-100 h-72" />
           <div className="h-4 w-24 bg-gray-100 rounded mt-3 mx-auto" />
         </div>
       ))}
@@ -60,11 +56,31 @@ function FleetSkeleton() {
   );
 }
 
+/* Cuánto se traslada, escala, rota e desvanece cada tarjeta según su
+   distancia (offset) al vehículo seleccionado. offset 0 = centro. El
+   traslado usa vw con un tope en px para que se vea bien tanto en
+   celular como en pantallas grandes, sin necesidad de medir el ancho
+   de la ventana en JS. */
+function getCardStyle(offset: number): React.CSSProperties {
+  const abs = Math.abs(offset);
+  const rotateY = Math.max(-40, Math.min(40, -offset * 32));
+  const scale = offset === 0 ? 1 : Math.max(0.58, 1 - abs * 0.17);
+  const opacity = abs <= 3 ? Math.max(0, 1 - abs * 0.3) : 0;
+
+  return {
+    transform: `translateX(-50%) translateX(calc(${offset} * min(30vw, 230px))) scale(${scale}) rotateY(${rotateY}deg)`,
+    opacity,
+    zIndex: 50 - abs,
+    pointerEvents: abs > 3 ? "none" : "auto",
+  };
+}
+
 export default function OurFleetPage() {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const dragStartX = useRef<number | null>(null);
+  const draggedRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/vehicles")
@@ -77,18 +93,33 @@ export default function OurFleetPage() {
   }, []);
 
   const selectVehicle = (index: number) => {
-    const clamped = Math.max(0, Math.min(index, vehicles.length - 1));
-    setSelectedIndex(clamped);
-    cardRefs.current[clamped]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
+    setSelectedIndex(Math.max(0, Math.min(index, vehicles.length - 1)));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight") selectVehicle(selectedIndex + 1);
     if (e.key === "ArrowLeft") selectVehicle(selectedIndex - 1);
+  };
+
+  // Deslizar con el dedo o el mouse, en cualquiera de las dos
+  // direcciones, para pasar al vehículo anterior/siguiente.
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartX.current = e.clientX;
+    draggedRef.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (dragStartX.current === null) return;
+    if (Math.abs(e.clientX - dragStartX.current) > 8) draggedRef.current = true;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (dragStartX.current === null) return;
+    const delta = e.clientX - dragStartX.current;
+    dragStartX.current = null;
+    const THRESHOLD = 50;
+    if (delta > THRESHOLD) selectVehicle(selectedIndex - 1);
+    else if (delta < -THRESHOLD) selectVehicle(selectedIndex + 1);
   };
 
   const selected = vehicles[selectedIndex];
@@ -120,17 +151,20 @@ export default function OurFleetPage() {
           <p className="text-center text-gray-400">No vehicles available yet.</p>
         ) : (
           <>
-            {/* Carrusel tipo "coverflow": el vehículo seleccionado se ve
-                grande y centrado; los demás, más chicos y semivisibles
-                a los lados. Se navega con clic, flechas del teclado
-                (con el carrusel enfocado), deslizando, o con las
-                flechas visibles en pantallas medianas y grandes. */}
+            {/* Carrusel giratorio: el vehículo seleccionado queda al
+                centro, grande y protagonista; los demás se reparten a
+                los lados, más chicos, girados en el eje Y y
+                desvanecidos según qué tan lejos están del centro.
+                Navega con clic sobre cualquier tarjeta visible, con
+                las flechas, arrastrando con el dedo/mouse hacia
+                cualquier lado, o con las flechas del teclado (carrusel
+                enfocado). */}
             <div className="relative">
               <button
                 onClick={() => selectVehicle(selectedIndex - 1)}
                 disabled={selectedIndex === 0}
                 aria-label="Previous vehicle"
-                className="hidden md:flex absolute left-4 lg:left-10 top-[104px] -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition disabled:opacity-30 disabled:pointer-events-none"
+                className="hidden md:flex absolute left-4 lg:left-10 top-1/2 -translate-y-1/2 z-[60] w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ChevronIcon className="w-5 h-5" direction="left" />
               </button>
@@ -138,7 +172,7 @@ export default function OurFleetPage() {
                 onClick={() => selectVehicle(selectedIndex + 1)}
                 disabled={selectedIndex === vehicles.length - 1}
                 aria-label="Next vehicle"
-                className="hidden md:flex absolute right-4 lg:right-10 top-[104px] -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition disabled:opacity-30 disabled:pointer-events-none"
+                className="hidden md:flex absolute right-4 lg:right-10 top-1/2 -translate-y-1/2 z-[60] w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-teal-600 hover:border-teal-300 transition disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ChevronIcon className="w-5 h-5" />
               </button>
@@ -146,39 +180,42 @@ export default function OurFleetPage() {
               <div
                 tabIndex={0}
                 onKeyDown={handleKeyDown}
-                aria-label="Fleet carousel, use arrow keys to navigate"
-                className="flex items-center gap-8 overflow-x-auto snap-x snap-mandatory py-6 focus:outline-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                style={{
-                  paddingLeft: `calc(50% - ${CARD_WIDTH / 2}px)`,
-                  paddingRight: `calc(50% - ${CARD_WIDTH / 2}px)`,
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={() => {
+                  dragStartX.current = null;
                 }}
+                aria-label="Fleet carousel, drag or use arrow keys to navigate"
+                className="relative h-[340px] sm:h-[380px] md:h-[440px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
+                style={{ perspective: "1400px" }}
               >
                 {vehicles.map((v, index) => {
-                  const isSelected = index === selectedIndex;
+                  const offset = index - selectedIndex;
+                  const isSelected = offset === 0;
                   return (
                     <div
                       key={v.id}
-                      ref={(el) => {
-                        cardRefs.current[index] = el;
+                      onClick={() => {
+                        if (draggedRef.current) return; // fue un swipe, no un tap
+                        selectVehicle(index);
                       }}
-                      onClick={() => selectVehicle(index)}
-                      className={`flex-shrink-0 snap-center cursor-pointer transition-all duration-500 ${
-                        isSelected ? "scale-100 opacity-100" : "scale-75 opacity-40"
-                      }`}
-                      style={{ width: CARD_WIDTH }}
+                      className="absolute top-0 left-1/2 w-56 sm:w-64 md:w-72 cursor-pointer transition-all duration-500 ease-out"
+                      style={getCardStyle(offset)}
                     >
                       <div
                         className={`rounded-2xl bg-gray-50 border overflow-hidden ${
-                          isSelected ? "border-teal-300 shadow-xl" : "border-gray-100"
+                          isSelected ? "border-teal-300 shadow-2xl" : "border-gray-100 shadow-sm"
                         }`}
                       >
-                        <div className="relative h-48 flex items-center justify-center p-6">
+                        <div className="relative h-64 sm:h-72 md:h-80 flex items-center justify-center p-6">
                           {v.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={v.image}
                               alt={v.name}
-                              className="max-h-full max-w-full object-contain"
+                              draggable={false}
+                              className="max-h-full max-w-full object-contain pointer-events-none"
                             />
                           ) : (
                             <div className="text-gray-300 text-sm">No image</div>
@@ -218,7 +255,7 @@ export default function OurFleetPage() {
                 seleccionado (Vehicle.description, editable desde
                 /admin/vehicles). Se desvanece al cambiar de vehículo. */}
             {selected && (
-              <FadeIn key={selected.id} className="max-w-2xl mx-auto text-center px-4 mt-10">
+              <FadeIn key={selected.id} className="max-w-2xl mx-auto text-center px-4 mt-12">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{selected.name}</h2>
                 <p className="text-sm text-gray-500 mb-4">
                   Up to {selected.capacity} passengers
