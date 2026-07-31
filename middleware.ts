@@ -2,15 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get("admin_token")?.value;
+  const { pathname } = req.nextUrl;
 
-  // Si es la página de login, permitir acceso sin token
-  if (req.nextUrl.pathname === "/admin/login") {
+
+  const isPublicPhotosRead = pathname.startsWith("/api/photos") && req.method === "GET";
+
+  if (pathname === "/admin/login" || isPublicPhotosRead) {
     return NextResponse.next();
   }
 
-  // Si no hay token, redirigir a login
+  const token = req.cookies.get("admin_token")?.value;
+
   if (!token) {
+
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/admin/login", req.url));
   }
 
@@ -20,8 +27,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     console.error("JWT INVALID:", error);
-    
-    // Opcional: eliminar la cookie inválida
+
+    if (pathname.startsWith("/api/")) {
+      const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      response.cookies.delete("admin_token");
+      return response;
+    }
+
     const response = NextResponse.redirect(new URL("/admin/login", req.url));
     response.cookies.delete("admin_token");
     return response;
@@ -29,5 +41,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/photos/:path*", "/api/upload/:path*"],
 };

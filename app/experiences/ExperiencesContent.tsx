@@ -50,14 +50,6 @@ function CompassIcon({ className }: { className?: string }) {
   );
 }
 
-function ChevronDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
 function ChevronArrow({ className, direction = "right" }: { className?: string; direction?: "left" | "right" }) {
   return (
     <svg
@@ -282,28 +274,8 @@ export default function ExperiencesContent() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         </div>
 
-        <div className="relative z-10 flex flex-col flex-1">
+        <div className="relative z-10">
           <Navbar />
-
-          <div className="flex-1 flex flex-col justify-center max-w-4xl">
-            <FadeIn>
-              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-teal-300 mb-4">
-                Experiences
-              </p>
-              <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] mb-5">
-                Live Los Cabos
-                <br />
-                like a local
-              </h1>
-              <p className="text-white/70 text-base md:text-lg max-w-md">
-                Three ways in. Pick one below and see exactly what your day could look like.
-              </p>
-            </FadeIn>
-          </div>
-
-          <FadeIn delay={300} className="flex justify-center pb-4">
-            <ChevronDown className="w-6 h-6 text-white/50 animate-bounce" />
-          </FadeIn>
         </div>
       </section>
 
