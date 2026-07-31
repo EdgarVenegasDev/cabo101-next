@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     // Notificación interna al equipo
     await resend.emails.send({
       from: "Cabo101 <no-reply@cabo101.com.mx>",
-      to: "cabo101guide@gmail.com",
+      to: "abraham_venegaz@hotmail.com",
       subject: `New Experience Inquiry - ${activityLabel}`,
       html: internalHtml,
     });

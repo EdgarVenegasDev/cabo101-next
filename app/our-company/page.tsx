@@ -1,10 +1,11 @@
 // app/our-company/page.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/sections/Footer";
 import FloatingContactButtons from "@/components/FloatingContactButtons";
+import Reveal from "@/components/Reveal";
 
 type Photo = {
   id: number;
@@ -38,60 +39,6 @@ const VALUES = [
       "We know Los Cabos inside and out — the best routes, the best spots, the best times to travel.",
   },
 ];
-
-/* ---------- helper: aparece con fade + slide-up al entrar en pantalla ---------- */
-function useReveal<T extends HTMLElement>(threshold = 0.15) {
-  const ref = useRef<T | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    // Si el navegador no soporta IntersectionObserver, mostrar directo.
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, visible };
-}
-
-function Reveal({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const { ref, visible } = useReveal<HTMLDivElement>();
-  return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-      } ${className}`}
-      style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
-    >
-      {children}
-    </div>
-  );
-}
 
 /* ---------- helper: trae la primera imagen de una sección del admin ---------- */
 function useSectionImage(section: string) {
