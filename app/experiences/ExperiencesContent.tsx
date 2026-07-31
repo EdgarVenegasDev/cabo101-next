@@ -322,8 +322,8 @@ export default function ExperiencesContent() {
                   aria-pressed={isActive}
                   className={`flex-1 flex items-center justify-center gap-2 rounded-t-2xl transition-all duration-300 ${
                     isActive
-                      ? "bg-[#FBF7F0] text-gray-900 py-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] z-20"
-                      : "bg-[#EDEAE3] text-gray-400 py-3 translate-y-1 hover:bg-[#E4E0D6] hover:text-gray-600 z-10"
+                      ? "bg-white text-gray-900 py-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] z-20"
+                      : "bg-gray-100 text-gray-400 py-3 translate-y-1 hover:bg-gray-200 hover:text-gray-600 z-10"
                   }`}
                 >
                   <activity.Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${isActive ? "text-teal-600" : ""}`} />
@@ -335,8 +335,10 @@ export default function ExperiencesContent() {
             })}
           </div>
 
-          {/* Cuerpo del fichero */}
-          <div className="bg-[#FBF7F0] rounded-b-2xl rounded-tr-2xl -mt-px shadow-[0_-4px_16px_rgba(0,0,0,0.06)] p-6 sm:p-8 md:p-12">
+          {/* Cuerpo del fichero — blanco, con borde para separarse de
+              la página (que también es blanca) ya que aquí no hay
+              diferencia de color que lo haga por sí sola. */}
+          <div className="bg-white border border-gray-100 rounded-b-2xl rounded-tr-2xl -mt-px shadow-[0_-4px_16px_rgba(0,0,0,0.06)] p-6 sm:p-8 md:p-12">
             {/* Todo lo que depende de la actividad activa se remonta
                 con key={activeKey} para que la animación se dispare en
                 cada cambio, no solo la primera vez que entra en pantalla. */}
@@ -394,62 +396,67 @@ export default function ExperiencesContent() {
                 </p>
               </FadeIn>
             </div>
-          </div>
-        </Reveal>
 
-        {/* ---------- FORMULARIO ---------- */}
-        <Reveal className="max-w-2xl mx-auto mt-16 bg-gray-50 rounded-2xl p-8 sm:p-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">
-            Interested in {activeActivity.label}?
-          </h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Leave us your details and we'll get back to you shortly.
-          </p>
+            {/* ---------- FORMULARIO — ahora dentro del fichero.
+                Vive fuera del div con key={activeKey} para no
+                remontarse (ni perder su animación de entrada) cada
+                vez que se cambia de actividad. ---------- */}
+            <div className="mt-10 pt-10 border-t border-gray-100">
+              <div className="max-w-xl mx-auto bg-gray-50 rounded-2xl p-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                  Interested in {activeActivity.label}?
+                </h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  Leave us your details and we'll get back to you shortly.
+                </p>
 
-          {sent ? (
-            <div className="bg-teal-50 border border-teal-100 text-teal-700 rounded-xl p-4 text-sm">
-              Thanks! We received your message and will be in touch soon.
+                {sent ? (
+                  <div className="bg-teal-50 border border-teal-100 text-teal-700 rounded-xl p-4 text-sm">
+                    Thanks! We received your message and will be in touch soon.
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {sendError && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">
+                        {sendError}
+                      </div>
+                    )}
+                    <input
+                      required
+                      type="text"
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+                    />
+                    <input
+                      required
+                      type="email"
+                      placeholder="Your email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+                    />
+                    <textarea
+                      required
+                      rows={4}
+                      placeholder="Tell us about your plans..."
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sending}
+                      className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
+                    >
+                      {sending ? "Sending..." : "Send Message"}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {sendError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">
-                  {sendError}
-                </div>
-              )}
-              <input
-                required
-                type="text"
-                placeholder="Your name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-              />
-              <input
-                required
-                type="email"
-                placeholder="Your email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-              />
-              <textarea
-                required
-                rows={4}
-                placeholder="Tell us about your plans..."
-                value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-              />
-              <button
-                type="submit"
-                disabled={sending}
-                className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
-              >
-                {sending ? "Sending..." : "Send Message"}
-              </button>
-            </form>
-          )}
+          </div>
         </Reveal>
       </section>
 
