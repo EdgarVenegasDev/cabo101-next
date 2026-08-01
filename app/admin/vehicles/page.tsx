@@ -13,6 +13,8 @@ interface Vehicle {
   image?: string | null;
   annotations?: string | null;
   description?: string | null;
+  maxBags?: number;
+  maxCarryOn?: number;
 }
 
 type FormState = {
@@ -22,6 +24,8 @@ type FormState = {
   image: string;
   annotations: string;
   description: string;
+  maxBags: string;
+  maxCarryOn: string;
 };
 
 const emptyForm: FormState = {
@@ -31,6 +35,8 @@ const emptyForm: FormState = {
   image: "",
   annotations: "",
   description: "",
+  maxBags: "",
+  maxCarryOn: "",
 };
 
 export default function VehiclesPage() {
@@ -114,6 +120,8 @@ export default function VehiclesPage() {
           image: finalImage || null,
           annotations: form.annotations.trim() || null,
           description: form.description.trim() || null,
+          maxBags: form.maxBags ? parseInt(form.maxBags) : 0,
+          maxCarryOn: form.maxCarryOn ? parseInt(form.maxCarryOn) : 0,
         }),
       });
 
@@ -138,6 +146,8 @@ export default function VehiclesPage() {
       image: vehicle.image || "",
       annotations: vehicle.annotations || "",
       description: vehicle.description || "",
+      maxBags: vehicle.maxBags != null ? String(vehicle.maxBags) : "",
+      maxCarryOn: vehicle.maxCarryOn != null ? String(vehicle.maxCarryOn) : "",
     });
     setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -210,6 +220,31 @@ export default function VehiclesPage() {
                 />
                 <span className="text-sm text-gray-700">Activo</span>
               </label>
+            </div>
+
+            {/* Maletas y carry-ons — se muestran como iconos en el
+                selector de vehículos del booking (VehicleSelector). */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">Maletas máximas (facturadas)</label>
+              <input
+                type="number"
+                min={0}
+                placeholder="e.g., 3"
+                value={form.maxBags}
+                onChange={(e) => setForm({ ...form, maxBags: e.target.value })}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">Carry-ons máximos</label>
+              <input
+                type="number"
+                min={0}
+                placeholder="e.g., 3"
+                value={form.maxCarryOn}
+                onChange={(e) => setForm({ ...form, maxCarryOn: e.target.value })}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+              />
             </div>
 
             {/* Foto del vehículo */}
@@ -332,7 +367,11 @@ export default function VehiclesPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">Capacidad: {vehicle.capacity} pasajeros</div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        Capacidad: {vehicle.capacity} pasajeros
+                        {" · "}
+                        {vehicle.maxBags ?? 0} maletas · {vehicle.maxCarryOn ?? 0} carry-ons
+                      </div>
                       {annotations.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {annotations.map((note, i) => (

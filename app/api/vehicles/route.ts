@@ -25,6 +25,8 @@ export async function POST(req: Request) {
       image: body.image || null,
       annotations: body.annotations || null,
       description: body.description || null,
+      maxBags: Number(body.maxBags) || 0,
+      maxCarryOn: Number(body.maxCarryOn) || 0,
     }
   })
   return NextResponse.json(vehicle)

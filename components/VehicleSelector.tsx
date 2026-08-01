@@ -17,6 +17,11 @@ type Vehicle = {
   // como tipos incompatibles aunque se llamen igual — eso causaba el
   // error de build en onSelect={setVehicle}.
   annotations: string[];
+  // Capacidad de equipaje del vehículo (fija, configurada en
+  // /admin/vehicles) — no depende de cuántos pasajeros tenga ESTA
+  // reserva, es cuánto cabe físicamente en el vehículo.
+  maxBags: number;
+  maxCarryOn: number;
 };
 
 type Props = {
@@ -24,8 +29,9 @@ type Props = {
   selected: Vehicle;
   onSelect: (vehicle: Vehicle) => void;
   // Cantidad real de pasajeros de ESTA reserva (no la capacidad máxima
-  // del vehículo) — 1 maleta grande + 1 de mano se agregan por cada
-  // pasajero, así que las maletas escalan con este número.
+  // del vehículo) — se sigue mostrando junto a los íconos de equipaje
+  // para dar contexto de cuántos van, aunque el equipaje ya no se
+  // calcule a partir de este número.
   passengerCount: number;
 };
 
@@ -91,50 +97,57 @@ export default function VehicleSelector({ vehicles, selected, onSelect, passenge
             ${index !== vehicles.length - 1 ? "border-b border-gray-200" : ""}
             `}
           >
-            {/* LEFT SIDE */}
-            <div className="flex items-start gap-4 min-w-0">
-              <motion.div whileHover={{ scale: 1.08 }} className="bg-gray-50 rounded-lg p-2 flex-shrink-0">
-                <Image src={v.image} alt={v.name} width={90} height={50} className="object-contain" />
-              </motion.div>
-              <div className="min-w-0">
-                <p className="font-semibold text-gray-900">{v.name}</p>
-                <p className="text-sm text-gray-500">Up to {v.capacity} passengers</p>
-                {v.disabled && (
-                <p className="text-xs text-red-500 mt-1">
-                    Not enough capacity
-                </p>
-                )}
+            {/* LEFT SIDE — el nombre va arriba, como encabezado de toda
+                la tarjeta, y debajo la imagen junto con el resto de la
+                información. */}
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-900">{v.name}</p>
 
-                {/* Anotaciones libres (una por línea en Vehicle.annotations,
-                    editables desde /admin/vehicles) */}
-                {v.annotations && v.annotations.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {v.annotations.map((note, i) => (
-                      <span
-                        key={i}
-                        className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md"
-                      >
-                        {note}
-                      </span>
-                    ))}
+              <div className="flex items-start gap-4 min-w-0 mt-2">
+                <motion.div whileHover={{ scale: 1.08 }} className="bg-gray-50 rounded-lg p-2 flex-shrink-0">
+                  <Image src={v.image} alt={v.name} width={90} height={50} className="object-contain" />
+                </motion.div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-500">Up to {v.capacity} passengers</p>
+                  {v.disabled && (
+                  <p className="text-xs text-red-500 mt-1">
+                      Not enough capacity
+                  </p>
+                  )}
+
+                  {/* Anotaciones libres (una por línea en Vehicle.annotations,
+                      editables desde /admin/vehicles) — en columna, una
+                      debajo de otra, no en una sola línea. */}
+                  {v.annotations && v.annotations.length > 0 && (
+                    <div className="flex flex-col items-start gap-1.5 mt-2">
+                      {v.annotations.map((note, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md"
+                        >
+                          {note}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pasajeros de esta reserva + capacidad máxima de
+                      equipaje del vehículo (fija, no calculada a partir
+                      de passengerCount) */}
+                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <PassengersIcon className="w-3.5 h-3.5" />
+                      {passengerCount}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <BagIcon className="w-3.5 h-3.5" />
+                      {v.maxBags} bag{v.maxBags === 1 ? "" : "s"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CarryOnIcon className="w-3.5 h-3.5" />
+                      {v.maxCarryOn} carry-on{v.maxCarryOn === 1 ? "" : "s"}
+                    </span>
                   </div>
-                )}
-
-                {/* Maletas: 1 grande + 1 de mano por pasajero de ESTA
-                    reserva (no por la capacidad máxima del vehículo) */}
-                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <PassengersIcon className="w-3.5 h-3.5" />
-                    {passengerCount}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <BagIcon className="w-3.5 h-3.5" />
-                    {passengerCount} bag{passengerCount === 1 ? "" : "s"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CarryOnIcon className="w-3.5 h-3.5" />
-                    {passengerCount} carry-on{passengerCount === 1 ? "" : "s"}
-                  </span>
                 </div>
               </div>
             </div>

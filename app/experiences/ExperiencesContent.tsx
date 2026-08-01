@@ -16,7 +16,7 @@ type Photo = {
 };
 
 type MediaType = "image" | "gif" | "video";
-type ActivityKey = "Act1" | "Act2" | "Act3";
+type ActivityKey = "fishing" | "boats" | "tours";
 
 /* ---------- iconos de cada actividad — refuerzan qué representa cada
    pestaña del fichero, no son decoración ---------- */
@@ -96,7 +96,7 @@ const ACTIVITIES: {
   Icon: ComponentType<{ className?: string }>;
 }[] = [
   {
-    key: "Act1",
+    key: "fishing",
     label: "Fishing",
     section: "activity-fishing",
     description:
@@ -104,7 +104,7 @@ const ACTIVITIES: {
     Icon: FishIcon,
   },
   {
-    key: "Act2",
+    key: "boats",
     label: "Boats & Yachts",
     section: "activity-boats",
     description:
@@ -112,7 +112,7 @@ const ACTIVITIES: {
     Icon: AnchorIcon,
   },
   {
-    key: "Act3",
+    key: "tours",
     label: "Activities & Tours",
     section: "activity-tours",
     description:
@@ -162,7 +162,7 @@ export default function ExperiencesContent() {
   const params = useSearchParams();
   const requestedActivity = params.get("activity") as ActivityKey | null;
   const [activeKey, setActiveKey] = useState<ActivityKey>(
-    ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "Act1"
+    ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "fishing"
   );
 
   const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience-preview.mp4");
@@ -170,6 +170,7 @@ export default function ExperiencesContent() {
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [lightboxItem, setLightboxItem] = useState<Photo | null>(null);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sending, setSending] = useState(false);
@@ -219,6 +220,23 @@ export default function ExperiencesContent() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [lightboxItem]);
 
+  // Al cargar la media de una actividad, arranca centrado en el
+  // elemento de en medio en vez de en el primero:
+  // [foto][foto][ FOTO ][foto][foto]
+  //                ↑
+  //           empieza aquí
+  useEffect(() => {
+    if (!carouselRef.current || media.length === 0) return;
+
+    const middle = Math.floor(media.length / 2);
+
+    itemRefs.current[middle]?.scrollIntoView({
+      behavior: "instant",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [media]);
+
   const scrollCarousel = (dir: 1 | -1) => {
     const el = carouselRef.current;
     if (!el) return;
@@ -253,7 +271,7 @@ export default function ExperiencesContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* ---------- HERO ---------- */}
-      <section className="relative isolate min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
+      <section className="relative isolate min-h-[50vh] md:min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
         {/* Sin z-index negativo: "isolate" en la sección crea su propio
             contexto de apilamiento, así que este div se queda detrás
             del contenido de abajo sin arriesgarse a caer detrás de
@@ -347,9 +365,12 @@ export default function ExperiencesContent() {
                     ref={carouselRef}
                     className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   >
-                    {media.map((item) => (
+                    {media.map((item, index) => (
                       <button
                         key={item.id}
+                        ref={(el) => {
+                          itemRefs.current[index] = el;
+                        }}
                         onClick={() => setLightboxItem(item)}
                         className="group relative aspect-square w-[45%] sm:w-[30%] md:w-[22%] flex-shrink-0 snap-center rounded-xl overflow-hidden bg-black/5"
                         aria-label={`Expand: ${item.caption || activeActivity.label}`}

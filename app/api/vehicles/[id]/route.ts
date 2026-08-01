@@ -13,6 +13,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       image: body.image,
       annotations: body.annotations,
       description: body.description,
+      maxBags: Number(body.maxBags) || 0,
+      maxCarryOn: Number(body.maxCarryOn) || 0,
     }
   })
   return NextResponse.json(vehicle)

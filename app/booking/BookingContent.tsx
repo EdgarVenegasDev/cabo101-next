@@ -16,6 +16,8 @@ type Vehicle = {
   image: string;
   maxPassengers: number;
   annotations: string[];
+  maxBags: number;
+  maxCarryOn: number;
 };
 
 type ApiVehicle = {
@@ -25,6 +27,8 @@ type ApiVehicle = {
   active: boolean;
   image?: string | null;
   annotations?: string | null;
+  maxBags?: number;
+  maxCarryOn?: number;
 };
 
 const DEFAULT_VEHICLE_IMAGES: Record<string, string> = {
@@ -35,9 +39,9 @@ const DEFAULT_VEHICLE_IMAGES: Record<string, string> = {
 const FALLBACK_VEHICLE_IMAGE = "/images/van.png";
 
 const FALLBACK_VEHICLES: Vehicle[] = [
-  { name: "SUV", capacity: "6", image: "/images/suv.png", maxPassengers: 6, annotations: [] },
-  { name: "VAN", capacity: "11", image: "/images/van.png", maxPassengers: 11, annotations: [] },
-  { name: "SPRINTER", capacity: "19", image: "/images/splinter.png", maxPassengers: 19, annotations: [] },
+  { name: "SUV", capacity: "6", image: "/images/suv.png", maxPassengers: 6, annotations: [], maxBags: 3, maxCarryOn: 3 },
+  { name: "VAN", capacity: "11", image: "/images/van.png", maxPassengers: 11, annotations: [], maxBags: 5, maxCarryOn: 5 },
+  { name: "SPRINTER", capacity: "19", image: "/images/splinter.png", maxPassengers: 19, annotations: [], maxBags: 8, maxCarryOn: 8 },
 ];
 
 // Convierte "Direct ride - no stops\nDriver may not speak English" (como
@@ -59,6 +63,8 @@ function mapApiVehicle(v: ApiVehicle): Vehicle {
     image: v.image || DEFAULT_VEHICLE_IMAGES[v.name] || FALLBACK_VEHICLE_IMAGE,
     maxPassengers: v.capacity,
     annotations: parseAnnotations(v.annotations),
+    maxBags: v.maxBags ?? 0,
+    maxCarryOn: v.maxCarryOn ?? 0,
   };
 }
 
