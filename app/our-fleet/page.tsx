@@ -68,7 +68,7 @@ function getCardStyle(offset: number): React.CSSProperties {
   const opacity = abs <= 3 ? Math.max(0, 1 - abs * 0.3) : 0;
 
   return {
-    transform: `translateX(-50%) translateX(calc(${offset} * min(30vw, 230px))) scale(${scale}) rotateY(${rotateY}deg)`,
+    transform: `translateX(-50%) translateX(calc(${offset} * min(34vw, 300px))) scale(${scale}) rotateY(${rotateY}deg)`,
     opacity,
     zIndex: 50 - abs,
     pointerEvents: abs > 3 ? "none" : "auto",
@@ -191,7 +191,7 @@ export default function OurFleetPage() {
                   dragStartX.current = null;
                 }}
                 aria-label="Fleet carousel, drag or use arrow keys to navigate"
-                className="relative h-[340px] sm:h-[380px] md:h-[440px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
+                className="relative h-[420px] sm:h-[480px] md:h-[560px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
                 style={{ perspective: "1400px" }}
               >
                 {vehicles.map((v, index) => {
@@ -204,27 +204,23 @@ export default function OurFleetPage() {
                         if (draggedRef.current) return; // fue un swipe, no un tap
                         selectVehicle(index);
                       }}
-                      className="absolute top-0 left-1/2 w-56 sm:w-64 md:w-72 cursor-pointer transition-all duration-500 ease-out"
+                      className="absolute top-0 left-1/2 w-72 sm:w-96 md:w-[440px] cursor-pointer transition-all duration-500 ease-out"
                       style={getCardStyle(offset)}
                     >
-                      <div
-                        className={`rounded-2xl bg-gray-50 border overflow-hidden ${
-                          isSelected ? "border-teal-300 shadow-2xl" : "border-gray-100 shadow-sm"
-                        }`}
-                      >
-                        <div className="relative h-64 sm:h-72 md:h-80 flex items-center justify-center p-6">
-                          {v.image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={v.image}
-                              alt={v.name}
-                              draggable={false}
-                              className="max-h-full max-w-full object-contain pointer-events-none"
-                            />
-                          ) : (
-                            <div className="text-gray-300 text-sm">No image</div>
-                          )}
-                        </div>
+                      <div className="relative h-72 sm:h-96 md:h-[420px] flex items-center justify-center">
+                        {v.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={v.image}
+                            alt={v.name}
+                            draggable={false}
+                            className={`max-h-full max-w-full object-contain pointer-events-none transition-[filter] duration-500 ${
+                              isSelected ? "drop-shadow-2xl" : ""
+                            }`}
+                          />
+                        ) : (
+                          <div className="text-gray-300 text-sm">No image</div>
+                        )}
                       </div>
                       <p
                         className={`text-center mt-3 font-semibold transition-colors ${
@@ -238,6 +234,7 @@ export default function OurFleetPage() {
                 })}
               </div>
             </div>
+
 
             {/* Indicadores de posición */}
             <div className="flex justify-center gap-2 mt-2">
