@@ -68,7 +68,7 @@ function getCardStyle(offset: number): React.CSSProperties {
   const opacity = abs <= 3 ? Math.max(0, 1 - abs * 0.3) : 0;
 
   return {
-    transform: `translateX(-50%) translateX(calc(${offset} * min(34vw, 300px))) scale(${scale}) rotateY(${rotateY}deg)`,
+    transform: `translateX(-50%) translateX(calc(${offset} * min(38vw, 370px))) scale(${scale}) rotateY(${rotateY}deg)`,
     opacity,
     zIndex: 50 - abs,
     pointerEvents: abs > 3 ? "none" : "auto",
@@ -191,7 +191,7 @@ export default function OurFleetPage() {
                   dragStartX.current = null;
                 }}
                 aria-label="Fleet carousel, drag or use arrow keys to navigate"
-                className="relative h-[420px] sm:h-[480px] md:h-[560px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
+                className="relative h-[480px] sm:h-[580px] md:h-[680px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
                 style={{ perspective: "1400px" }}
               >
                 {vehicles.map((v, index) => {
@@ -204,10 +204,10 @@ export default function OurFleetPage() {
                         if (draggedRef.current) return; // fue un swipe, no un tap
                         selectVehicle(index);
                       }}
-                      className="absolute top-0 left-1/2 w-72 sm:w-96 md:w-[440px] cursor-pointer transition-all duration-500 ease-out"
+                      className="absolute top-0 left-1/2 w-80 sm:w-[440px] md:w-[560px] cursor-pointer transition-all duration-500 ease-out"
                       style={getCardStyle(offset)}
                     >
-                      <div className="relative h-72 sm:h-96 md:h-[420px] flex items-center justify-center">
+                      <div className="relative h-80 sm:h-[440px] md:h-[540px] flex items-center justify-center">
                         {v.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -256,15 +256,14 @@ export default function OurFleetPage() {
                 seleccionado (Vehicle.description, editable desde
                 /admin/vehicles). Se desvanece al cambiar de vehículo. */}
             {selected && (
-              <FadeIn key={selected.id} className="max-w-2xl mx-auto text-center px-4 mt-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selected.name}</h2>
-                <p className="text-sm text-gray-500 mb-4">
-                  Up to {selected.capacity} passengers
-                </p>
-                <p className="text-gray-600 leading-relaxed">
-                  {selected.description ||
-                    "Comfortable, reliable, and ready for your Los Cabos adventure."}
-                </p>
+              <FadeIn key={selected.id} className="max-w-2xl mx-auto px-4 mt-12">
+                <div className="border border-gray-200 rounded-2xl px-6 py-8 sm:px-10 sm:py-10 text-center">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">{selected.name}</h2>
+                  <p className="text-gray-600 leading-relaxed">
+                    {selected.description ||
+                      "Comfortable, reliable, and ready for your Los Cabos adventure."}
+                  </p>
+                </div>
               </FadeIn>
             )}
           </>
