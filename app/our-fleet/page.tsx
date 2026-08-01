@@ -86,7 +86,11 @@ export default function OurFleetPage() {
     fetch("/api/vehicles")
       .then((res) => res.json())
       .then((data: ApiVehicle[]) => {
-        setVehicles(data.filter((v) => v.active !== false));
+        const activeVehicles = data.filter((v) => v.active !== false);
+        setVehicles(activeVehicles);
+
+        // Iniciar en el vehículo del centro, sin importar cuántos haya.
+        setSelectedIndex(Math.floor(activeVehicles.length / 2));
       })
       .catch((err) => console.error("Error cargando la flota:", err))
       .finally(() => setLoading(false));

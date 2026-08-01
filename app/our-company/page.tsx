@@ -117,7 +117,7 @@ export default function OurCompanyPage() {
             Our Company
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900">
-            Rooted in Los Cabos, driven by family values
+            Descripcion Breve
           </h1>
         </Reveal>
 

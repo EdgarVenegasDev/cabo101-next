@@ -16,7 +16,7 @@ type Photo = {
 };
 
 type MediaType = "image" | "gif" | "video";
-type ActivityKey = "fishing" | "boats" | "tours";
+type ActivityKey = "Act1" | "Act2" | "Act3";
 
 /* ---------- iconos de cada actividad — refuerzan qué representa cada
    pestaña del fichero, no son decoración ---------- */
@@ -96,7 +96,7 @@ const ACTIVITIES: {
   Icon: ComponentType<{ className?: string }>;
 }[] = [
   {
-    key: "fishing",
+    key: "Act1",
     label: "Fishing",
     section: "activity-fishing",
     description:
@@ -104,7 +104,7 @@ const ACTIVITIES: {
     Icon: FishIcon,
   },
   {
-    key: "boats",
+    key: "Act2",
     label: "Boats & Yachts",
     section: "activity-boats",
     description:
@@ -112,7 +112,7 @@ const ACTIVITIES: {
     Icon: AnchorIcon,
   },
   {
-    key: "tours",
+    key: "Act3",
     label: "Activities & Tours",
     section: "activity-tours",
     description:
@@ -162,7 +162,7 @@ export default function ExperiencesContent() {
   const params = useSearchParams();
   const requestedActivity = params.get("activity") as ActivityKey | null;
   const [activeKey, setActiveKey] = useState<ActivityKey>(
-    ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "fishing"
+    ACTIVITIES.some((a) => a.key === requestedActivity) ? (requestedActivity as ActivityKey) : "Act1"
   );
 
   const [heroVideoUrl, setHeroVideoUrl] = useState("/images/experience-preview.mp4");
