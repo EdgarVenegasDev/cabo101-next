@@ -14,7 +14,39 @@ type ApiVehicle = {
   active: boolean;
   image?: string | null;
   description?: string | null;
+  maxBags?: number;
+  maxCarryOn?: number;
 };
+
+function PassengersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function BagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="7" width="16" height="14" rx="2" />
+      <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}
+
+function CarryOnIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="4" width="12" height="17" rx="2" />
+      <path d="M10 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" />
+      <line x1="9" y1="10" x2="15" y2="10" />
+    </svg>
+  );
+}
 
 function ChevronIcon({
   className,
@@ -68,7 +100,7 @@ function getCardStyle(offset: number): React.CSSProperties {
   const opacity = abs <= 3 ? Math.max(0, 1 - abs * 0.3) : 0;
 
   return {
-    transform: `translateX(-50%) translateX(calc(${offset} * min(38vw, 370px))) scale(${scale}) rotateY(${rotateY}deg)`,
+    transform: `translateX(-50%) translateX(calc(${offset} * min(46vw, 480px))) scale(${scale}) rotateY(${rotateY}deg)`,
     opacity,
     zIndex: 50 - abs,
     pointerEvents: abs > 3 ? "none" : "auto",
@@ -191,7 +223,7 @@ export default function OurFleetPage() {
                   dragStartX.current = null;
                 }}
                 aria-label="Fleet carousel, drag or use arrow keys to navigate"
-                className="relative h-[480px] sm:h-[580px] md:h-[680px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
+                className="relative h-[520px] sm:h-[620px] md:h-[720px] cursor-grab active:cursor-grabbing select-none touch-pan-y"
                 style={{ perspective: "1400px" }}
               >
                 {vehicles.map((v, index) => {
@@ -204,10 +236,10 @@ export default function OurFleetPage() {
                         if (draggedRef.current) return; // fue un swipe, no un tap
                         selectVehicle(index);
                       }}
-                      className="absolute top-0 left-1/2 w-80 sm:w-[440px] md:w-[560px] cursor-pointer transition-all duration-500 ease-out"
+                      className="absolute top-0 left-1/2 w-[360px] sm:w-[480px] md:w-[600px] cursor-pointer transition-all duration-500 ease-out"
                       style={getCardStyle(offset)}
                     >
-                      <div className="relative h-80 sm:h-[440px] md:h-[540px] flex items-center justify-center">
+                      <div className="relative h-[360px] sm:h-[480px] md:h-[580px] flex items-center justify-center">
                         {v.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -254,11 +286,16 @@ export default function OurFleetPage() {
 
             {/* Descripción dinámica: cambia según el vehículo
                 seleccionado (Vehicle.description, editable desde
-                /admin/vehicles). Se desvanece al cambiar de vehículo. */}
+                /admin/vehicles). Se desvanece al cambiar de vehículo.
+                El nombre ya se ve debajo de cada tarjeta del carrusel,
+                así que aquí no se repite — en su lugar van las
+                características (capacidad, maletas, carry-ons). */}
             {selected && (
               <FadeIn key={selected.id} className="max-w-2xl mx-auto px-4 mt-12">
                 <div className="border border-gray-200 rounded-2xl px-6 py-8 sm:px-10 sm:py-10 text-center">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">{selected.name}</h2>
+                  <p className="text-xs font-semibold tracking-widest uppercase text-teal-600 mb-4">
+                    Características
+                  </p>
                   <p className="text-gray-600 leading-relaxed">
                     {selected.description ||
                       "Comfortable, reliable, and ready for your Los Cabos adventure."}
