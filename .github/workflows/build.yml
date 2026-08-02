@@ -1,0 +1,54 @@
+name: Build check
+
+# Corre en cada Pull Request hacia main, y también en pushes directos a
+# main (por si algún día se hace un merge sin PR) — así cualquier PR
+# muestra un check verde/rojo antes de poder mergear, en vez de
+# enterarte de que algo no compila hasta que ya está en el servidor.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Next.js 14 requiere Node 18.17+ o 20+. Usamos 20 LTS.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Genera el cliente de Prisma a partir de schema.prisma. Esto NO
+      # se conecta a la base de datos real — solo lee el schema y
+      # genera tipos — así que sirve incluso con un DATABASE_URL falso.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # El build de Next.js importa cada route de app/api/** para
+      # armar el manifest de rutas, lo cual ejecuta el código a nivel
+      # de módulo de esos archivos (por eso el check de RESEND_API_KEY
+      # en app/api/contact/route.ts puede tronar el build si falta el
+      # secret — de ahí que esté abajo como GitHub Secret).
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
