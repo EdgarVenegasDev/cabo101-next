@@ -14,11 +14,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Definidas a nivel de job (no solo en el paso "Build") porque
-    # "Generate Prisma client" también necesita DATABASE_URL desde que
-    # prisma.config.ts la lee vía env("DATABASE_URL") — si solo estaba
-    # en el paso de Build, ese paso anterior fallaba antes de llegar
-    # siquiera a usarlas.
+    # A nivel de job (no solo en un paso) porque "Generate Prisma
+    # client" también necesita DATABASE_URL desde que prisma.config.ts
+    # la resuelve vía env("DATABASE_URL").
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
@@ -39,18 +37,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Genera el cliente de Prisma a partir de schema.prisma. Con
-      # Prisma 7, esto SÍ necesita DATABASE_URL disponible, porque
-      # prisma.config.ts la resuelve vía env("DATABASE_URL") aunque no
-      # se conecte de verdad a la base de datos.
       - name: Generate Prisma client
         run: npx prisma generate
-
-      - name: Type-check
-        run: npx tsc --noEmit
 
       - name: Lint
         run: npm run lint
 
+      # No corremos "tsc --noEmit" como paso aparte: sin que Next.js
+      # haya generado next-env.d.ts primero, TypeScript no conoce las
+      # props especiales de Next (ej. <style jsx global>) y produce
+      # falsos positivos. "next build" SÍ hace type-check completo,
+      # pero con el contexto correcto — es la única fuente de verdad.
       - name: Build
         run: npm run build
