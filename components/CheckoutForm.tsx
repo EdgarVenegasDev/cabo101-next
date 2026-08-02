@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import PaymentBrick from "@/components/PaymentBrick";
 import { motion, AnimatePresence } from "framer-motion";
 import { buildBookingPayload } from "@/lib/buildBookingPayload";
+import type { BrickSubmitData } from "@/types/mercadopago";
 
 type Vehicle = {
   name: string;
@@ -82,7 +83,7 @@ export default function CheckoutForm({
   };
 
   const handlePayment = useCallback(
-    async (brickData: Record<string, any>) => {
+    async (brickData: BrickSubmitData) => {
       console.log("BRICK DATA:", brickData);
 
       if (priceUSD === null) {
@@ -176,6 +177,7 @@ export default function CheckoutForm({
       priceUSD,
       stopFee,
       selectedStop,
+      stopOption,
       vehicle.name,
       from,
       to,
