@@ -5,14 +5,15 @@
 
 import { memo } from "react";
 import { Payment } from "@mercadopago/sdk-react";
+import type { BrickSubmitData } from "@/types/mercadopago";
 
 type Props = {
   amount: number;
-  onSubmit: (data: any) => Promise<any>;
+  onSubmit: (data: BrickSubmitData) => Promise<void>;
 };
 
 function PaymentBrickComponent({ amount, onSubmit }: Props) {
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: BrickSubmitData) => {
     console.log("📦 Datos recibidos del brick:", data);
 
     // Extraer campos necesarios (pueden venir directamente o dentro de formData)
@@ -33,10 +34,9 @@ function PaymentBrickComponent({ amount, onSubmit }: Props) {
     await onSubmit({
       token,
       payment_method_id,
-      issuer_id: issuer_id || null,
+      issuer_id: issuer_id || undefined,
       installments: installments || 1,
-      payer: payer || null,
-      // Incluir el resto de datos por si acaso
+      payer: payer || undefined,
       ...data,
     });
   };

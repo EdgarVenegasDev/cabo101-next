@@ -74,7 +74,7 @@ export default function Testimonials() {
             <div>
               <Stars count={t.rating} />
               <p className="text-gray-600 text-sm leading-relaxed mt-4">
-                "{t.text}"
+                &quot;{t.text}&quot;
               </p>
             </div>
 

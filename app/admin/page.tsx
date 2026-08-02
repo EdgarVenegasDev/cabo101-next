@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import PaymentBrick from "@/components/PaymentBrick";
 import { buildBookingPayload } from "@/lib/buildBookingPayload";
+import type { BrickSubmitData } from "@/types/mercadopago";
 
 export default function AdminDashboard() {
   // ========== FORM STATE ==========
@@ -125,7 +126,7 @@ export default function AdminDashboard() {
   };
 
   const handleAdminPayment = useCallback(
-    async (data: any) => {
+  async (data: BrickSubmitData) => {
       const payload = buildBookingPayload({
         transaction_amount: Number(transactionAmount),
         firstName: firstName || "",

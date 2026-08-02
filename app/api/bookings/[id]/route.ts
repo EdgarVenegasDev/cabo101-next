@@ -12,7 +12,7 @@ export async function PUT(
   const body = await req.json();
 
   // Construir objeto data solo con los campos presentes
-  const data: any = {};
+  const data: { tripStatus?: string; driverNotes?: string } = {};
   if (body.tripStatus !== undefined) data.tripStatus = body.tripStatus;
   if (body.driverNotes !== undefined) data.driverNotes = body.driverNotes;
 

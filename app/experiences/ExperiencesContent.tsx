@@ -411,7 +411,7 @@ export default function ExperiencesContent() {
                   Interested in {activeActivity.label}?
                 </h2>
                 <p className="text-sm text-gray-500 mb-6">
-                  Leave us your details and we'll get back to you shortly.
+                  Leave us your details and we&apos;ll get back to you shortly.
                 </p>
 
                 {sent ? (

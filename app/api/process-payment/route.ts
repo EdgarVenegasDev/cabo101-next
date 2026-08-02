@@ -254,17 +254,19 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("FULL MP ERROR:");
     console.dir(error, { depth: null });
 
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const cause = error instanceof Error ? error.cause : undefined;
+    const status =
+      typeof error === "object" && error !== null && "status" in error
+        ? (error as { status?: number }).status
+        : undefined;
+
     return NextResponse.json(
-      {
-        error: true,
-        message: error?.message,
-        cause: error?.cause,
-        status: error?.status,
-      },
+      { error: true, message, cause, status },
       { status: 500 }
     );
   }
