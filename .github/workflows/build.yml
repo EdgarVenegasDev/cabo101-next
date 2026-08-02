@@ -14,6 +14,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Definidas a nivel de job (no solo en el paso "Build") porque
+    # "Generate Prisma client" también necesita DATABASE_URL desde que
+    # prisma.config.ts la lee vía env("DATABASE_URL") — si solo estaba
+    # en el paso de Build, ese paso anterior fallaba antes de llegar
+    # siquiera a usarlas.
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,9 +39,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Genera el cliente de Prisma a partir de schema.prisma. Esto NO
-      # se conecta a la base de datos real — solo lee el schema y
-      # genera tipos — así que sirve incluso con un DATABASE_URL falso.
+      # Genera el cliente de Prisma a partir de schema.prisma. Con
+      # Prisma 7, esto SÍ necesita DATABASE_URL disponible, porque
+      # prisma.config.ts la resuelve vía env("DATABASE_URL") aunque no
+      # se conecte de verdad a la base de datos.
       - name: Generate Prisma client
         run: npx prisma generate
 
@@ -40,15 +52,5 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # El build de Next.js importa cada route de app/api/** para
-      # armar el manifest de rutas, lo cual ejecuta el código a nivel
-      # de módulo de esos archivos (por eso el check de RESEND_API_KEY
-      # en app/api/contact/route.ts puede tronar el build si falta el
-      # secret — de ahí que esté abajo como GitHub Secret).
       - name: Build
         run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
