@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
 }
 
 // ----------------------
@@ -35,6 +34,8 @@ model Vehicle {
   image       String?
   annotations String?  @db.Text
   description String?  @db.Text  // descripción larga para la página "Our Fleet"
+  maxBags     Int      @default(0)
+  maxCarryOn  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

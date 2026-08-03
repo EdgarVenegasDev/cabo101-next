@@ -8,9 +8,6 @@ import { useRouter } from "next/navigation";
 import useGoogleMaps from "@/lib/useGoogleMaps";
 import MapModal from "@/components/MapModal";
 
-declare global {
-  interface Window { google: any; }
-}
 
 type PlaceLike = {
   name?: string;
@@ -23,6 +20,26 @@ type PlaceLike = {
     };
   };
 };
+
+declare global {
+  interface Window {
+    google: {
+      maps: {
+        places: {
+          Autocomplete: new (
+            input: HTMLInputElement,
+            opts?: Record<string, unknown>
+          ) => {
+            addListener: (event: string, handler: () => void) => void;
+            getPlace: () => PlaceLike;
+          };
+        };
+        LatLngBounds: new (sw: unknown, ne: unknown) => unknown;
+        LatLng: new (lat: number, lng: number) => unknown;
+      };
+    };
+  }
+}
 
 export default function BookingForm({ tripType }: { tripType: "oneway" | "round" }) {
   const router = useRouter();
@@ -66,7 +83,7 @@ export default function BookingForm({ tripType }: { tripType: "oneway" | "round"
           const place = fromAuto.getPlace();
           if (place?.geometry && fromRef.current) {
             fromPlaceRef.current = place;
-            fromRef.current.value = place.name;
+            fromRef.current.value = place.name ?? place.formatted_address ?? "";
             setCustomFrom(false);
           }
         });
@@ -78,7 +95,7 @@ export default function BookingForm({ tripType }: { tripType: "oneway" | "round"
           const place = toAuto.getPlace();
           if (place?.geometry && toRef.current) {
             toPlaceRef.current = place;
-            toRef.current.value = place.name;
+            toRef.current.value = place.name ?? place.formatted_address ?? "";
             setCustomTo(false);
           }
         });

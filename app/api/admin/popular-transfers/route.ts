@@ -3,6 +3,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = "force-dynamic";
+
 // GET: Lista de viajes populares
 export async function GET() {
   const popularTransfers = await prisma.popularTransfer.findMany({

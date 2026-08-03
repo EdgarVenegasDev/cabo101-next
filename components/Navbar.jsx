@@ -202,7 +202,7 @@ export default function Navbar() {
             <div className="mt-3 w-full bg-white/5 border border-white/10 rounded-xl p-4 min-[901px]:absolute min-[901px]:top-full min-[901px]:right-0 min-[901px]:mt-3 min-[901px]:w-72 min-[901px]:bg-black/95 min-[901px]:shadow-xl">
               {weatherLoading && <p className="text-sm text-white/60">Loading forecast...</p>}
               {weatherError && (
-                <p className="text-sm text-red-300">Couldn't load the weather right now.</p>
+                <p className="text-sm text-red-300">Couldn&apos;t load the weather right now.</p>
               )}
               {currentWeather && weather && (
                 <>

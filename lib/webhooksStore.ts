@@ -1,1 +1,3 @@
-export const webhooks: any[] = [];
+//webhooksStore.ts
+
+export const webhooks: unknown[] = [];

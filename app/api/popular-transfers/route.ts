@@ -3,6 +3,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = "force-dynamic";
+
 type ZoneBounds = {
   latMin: number | null;
   latMax: number | null;
@@ -45,7 +47,7 @@ export async function GET() {
   });
 
   const transfers = await Promise.all(
-    populars.map(async (item) => {
+  populars.map(async (item: (typeof populars)[number]) => {
       const price = await prisma.price.findFirst({
         where: {
           fromZone: airport.slug,
@@ -85,7 +87,7 @@ export async function GET() {
   // tarjeta igual se muestra — el toggle en el frontend deshabilita la
   // opción que no esté disponible para esa ruta.
   const availableTransfers = transfers.filter(
-    (t) =>
+  (t: (typeof transfers)[number]) =>
       (t.oneWayPriceUSD !== null || t.roundTripPriceUSD !== null) &&
       t.fromLat !== null &&
       t.toLat !== null

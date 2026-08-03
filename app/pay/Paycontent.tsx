@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import Image from "next/image";
 import PaymentBrick from "@/components/PaymentBrick";
 import { motion, AnimatePresence } from "framer-motion";
+import type { BrickSubmitData } from "@/types/mercadopago";
 
 // Traduce el status_detail de Mercado Pago a un mensaje entendible para el
 // cliente. "default" cubre cualquier código que no esté en la lista.
@@ -81,7 +82,7 @@ export default function PayContent() {
   const [brickKey, setBrickKey] = useState(0);
 
   const handlePayment = useCallback(
-    async (data: any) => {
+  async (data: BrickSubmitData) => {
       console.log("PAYMENT DATA ENVIADO AL BACKEND:", data);
       setRejection(null);
 

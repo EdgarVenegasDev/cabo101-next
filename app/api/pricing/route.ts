@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPriceFromDB } from "@/lib/pricing";
-
+export const dynamic = "force-dynamic";
 // Función auxiliar para obtener zona desde coordenadas (consulta a BD)
 async function getZoneFromCoordinates(lat: number, lng: number) {
   const zone = await prisma.zone.findFirst({

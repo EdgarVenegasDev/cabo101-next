@@ -1,0 +1,63 @@
+name: Build check
+
+# Corre en cada Pull Request hacia main, y también en pushes directos a
+# main (por si algún día se hace un merge sin PR) — así cualquier PR
+# muestra un check verde/rojo antes de poder mergear, en vez de
+# enterarte de que algo no compila hasta que ya está en el servidor.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # A nivel de job (no solo en un paso) porque "Generate Prisma
+    # client" también necesita DATABASE_URL desde que prisma.config.ts
+    # la resuelve vía env("DATABASE_URL").
+    env:
+      env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
+      NEXT_PUBLIC_MP_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_MP_PUBLIC_KEY }}
+      MP_WEBHOOK_URL: ${{ secrets.MP_WEBHOOK_URL }}
+      WHATSAPP_ADMIN: ${{ secrets.WHATSAPP_ADMIN }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Next.js 14 requiere Node 18.17+ o 20+. Usamos 20 LTS.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      # No corremos "tsc --noEmit" como paso aparte: sin que Next.js
+      # haya generado next-env.d.ts primero, TypeScript no conoce las
+      # props especiales de Next (ej. <style jsx global>) y produce
+      # falsos positivos. "next build" SÍ hace type-check completo,
+      # pero con el contexto correcto — es la única fuente de verdad.
+      - name: Build
+        run: npm run build

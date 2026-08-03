@@ -98,12 +98,11 @@ export default function BookingsPage() {
         setError("Formato de datos inválido");
       }
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "No se pudieron cargar las reservas");
+      const message = err instanceof Error ? err.message : "No se pudieron cargar las reservas";
+      setError(message);
       setBookings([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -201,10 +200,10 @@ export default function BookingsPage() {
   };
 
   const updateBooking = async (tripStatus?: string, notes?: string) => {
-    if (!selectedBooking) return;
-    setUpdating(true);
+  if (!selectedBooking) return;
+  setUpdating(true);
     try {
-      const payload: any = {};
+      const payload: Partial<Pick<Booking, "tripStatus" | "driverNotes">> = {};
       if (tripStatus !== undefined) payload.tripStatus = tripStatus;
       if (notes !== undefined) payload.driverNotes = notes;
 
@@ -287,7 +286,7 @@ export default function BookingsPage() {
               <label className="text-xs font-medium text-gray-500">Fecha</label>
               <select
                 value={filters.dateRange}
-                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value as FilterType["dateRange"] })}
                 className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
               >
                 <option value="all">Todas</option>
@@ -301,7 +300,7 @@ export default function BookingsPage() {
               <label className="text-xs font-medium text-gray-500">Pago</label>
               <select
                 value={filters.paymentStatus}
-                onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value as FilterType["paymentStatus"] })}
                 className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
               >
                 <option value="all">Todos</option>
@@ -313,7 +312,7 @@ export default function BookingsPage() {
               <label className="text-xs font-medium text-gray-500">Estado del viaje</label>
               <select
                 value={filters.tripStatus}
-                onChange={(e) => setFilters({ ...filters, tripStatus: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, tripStatus: e.target.value as FilterType["tripStatus"] })}
                 className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
               >
                 <option value="all">Todos</option>
@@ -326,7 +325,7 @@ export default function BookingsPage() {
               <label className="text-xs font-medium text-gray-500">Ordenar por</label>
               <select
                 value={filters.sortBy}
-                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as FilterType["sortBy"] })}
                 className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
               >
                 <option value="mostRecent">Más reciente</option>

@@ -299,7 +299,7 @@ export default function VehiclesPage() {
             {/* Descripción larga (Our Fleet) */}
             <div className="md:col-span-3 flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-500">
-                Descripción detallada (se muestra en la página "Our Fleet")
+                Descripción detallada (se muestra en la página &quot;Our Fleet&quot;)
               </label>
               <textarea
                 rows={4}

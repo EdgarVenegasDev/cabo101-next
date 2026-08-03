@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { unlink } from "fs/promises";
 import path from "path";
-
+export const dynamic = "force-dynamic";
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const id = parseInt(params.id);
   const photo = await prisma.photo.findUnique({ where: { id } });

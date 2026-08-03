@@ -97,7 +97,7 @@ const ACTIVITIES: {
 }[] = [
   {
     key: "fishing",
-    label: "Fishing",
+    label: "Act1",
     section: "activity-fishing",
     description:
       "Chase marlin, dorado, and tuna in the legendary waters where the Pacific meets the Sea of Cortez. Our experienced captains know exactly where the fish are biting, whether you're a first-timer or a seasoned angler.",
@@ -105,7 +105,7 @@ const ACTIVITIES: {
   },
   {
     key: "boats",
-    label: "Boats & Yachts",
+    label: "Act2",
     section: "activity-boats",
     description:
       "Cruise past the iconic Arch of Cabo San Lucas aboard a private yacht or boat, with snorkeling stops, sunset views, and refreshments on board — perfect for celebrations or a relaxed day on the water.",
@@ -113,7 +113,7 @@ const ACTIVITIES: {
   },
   {
     key: "tours",
-    label: "Activities & Tours",
+    label: "Act3",
     section: "activity-tours",
     description:
       "From ATV desert adventures to whale watching and city tours, discover the best of Los Cabos with a local guide by your side who knows every hidden gem.",
@@ -271,7 +271,7 @@ export default function ExperiencesContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* ---------- HERO ---------- */}
-      <section className="relative isolate min-h-[50vh] md:min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
+      <section className="relative isolate min-h-[90vh] sm:min-h-[85vh] md:min-h-[80vh] flex flex-col px-4 sm:px-6 md:px-10 lg:px-20 py-4 sm:py-6">
         {/* Sin z-index negativo: "isolate" en la sección crea su propio
             contexto de apilamiento, así que este div se queda detrás
             del contenido de abajo sin arriesgarse a caer detrás de
@@ -341,7 +341,11 @@ export default function ExperiencesContent() {
 
               {/* Carrusel de media: fotos, gifs y video, en el orden
                   que venga del admin. Soporta swipe en móvil y flechas
-                  en desktop. */}
+                  en desktop. Si la actividad no tiene media todavía,
+                  se reserva el mismo espacio con un placeholder en vez
+                  de colapsar el bloque — así el fólder no cambia de
+                  alto al cambiar de pestaña y el contenido de abajo no
+                  se recorre. */}
               {loadingMedia ? (
                 <CarouselSkeleton />
               ) : media.length > 0 ? (
@@ -380,11 +384,18 @@ export default function ExperiencesContent() {
                     ))}
                   </div>
                 </FadeIn>
-              ) : null}
+              ) : (
+                <div className="aspect-square w-[45%] sm:w-[30%] md:w-[22%] rounded-xl bg-black/5 flex items-center justify-center mb-8">
+                  <p className="text-xs text-gray-400 text-center px-3">No photos yet</p>
+                </div>
+              )}
 
-              {/* Descripción breve, dinámica por actividad */}
+              {/* Descripción breve, dinámica por actividad — con una
+                  altura mínima para que el cambio de una descripción
+                  corta a una más larga no mueva tanto el contenido de
+                  abajo. */}
               <FadeIn delay={140}>
-                <p className="text-gray-600 leading-relaxed max-w-2xl">
+                <p className="text-gray-600 leading-relaxed max-w-2xl min-h-[4.5rem]">
                   {activeActivity.description}
                 </p>
               </FadeIn>
@@ -400,7 +411,7 @@ export default function ExperiencesContent() {
                   Interested in {activeActivity.label}?
                 </h2>
                 <p className="text-sm text-gray-500 mb-6">
-                  Leave us your details and we'll get back to you shortly.
+                  Leave us your details and we&apos;ll get back to you shortly.
                 </p>
 
                 {sent ? (

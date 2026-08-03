@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { bookingConfirmationTemplate, BookingEmailData } from "@/lib/emailTemplates/bookingConfirmation";
 
+export const dynamic = "force-dynamic";
+
 if (!process.env.MP_ACCESS_TOKEN) {
   throw new Error("Missing MP_ACCESS_TOKEN environment variable");
 }
@@ -254,17 +256,19 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("FULL MP ERROR:");
     console.dir(error, { depth: null });
 
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const cause = error instanceof Error ? error.cause : undefined;
+    const status =
+      typeof error === "object" && error !== null && "status" in error
+        ? (error as { status?: number }).status
+        : undefined;
+
     return NextResponse.json(
-      {
-        error: true,
-        message: error?.message,
-        cause: error?.cause,
-        status: error?.status,
-      },
+      { error: true, message, cause, status },
       { status: 500 }
     );
   }

@@ -1,6 +1,8 @@
 //app/api/create-payment/route.ts
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
+export const dynamic = "force-dynamic";
+
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
 });

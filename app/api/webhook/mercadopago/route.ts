@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import nodemailer from "nodemailer";
 
+export const dynamic = "force-dynamic";
+
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
 });
