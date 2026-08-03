@@ -45,15 +45,15 @@ export default function MapModal({ isOpen, onClose, onSelect }: MapModalProps) {
       });
 
       const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: position }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-        if (status === "OK" && results && results[0]) {
-          onSelect({
-            ...position,
-            address: results[0].formatted_address,
-          });
-          onClose();
-        }
-      });
+      geocoder.geocode({ location: position }, (results, status) => {
+      if (status === "OK" && results && results[0]) {
+        onSelect({
+          ...position,
+          address: results[0].formatted_address,
+        });
+        onClose();
+      }
+    });
     });
   }, [isOpen, onClose, onSelect]);
 

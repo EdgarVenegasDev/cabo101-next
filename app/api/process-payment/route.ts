@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { bookingConfirmationTemplate, BookingEmailData } from "@/lib/emailTemplates/bookingConfirmation";
 
+export const dynamic = "force-dynamic";
+
 if (!process.env.MP_ACCESS_TOKEN) {
   throw new Error("Missing MP_ACCESS_TOKEN environment variable");
 }

@@ -1,5 +1,7 @@
 // app/api/contact/route.ts
 
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 

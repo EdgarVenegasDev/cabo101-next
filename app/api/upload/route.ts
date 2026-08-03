@@ -8,6 +8,8 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 
+export const dynamic = "force-dynamic";
+
 const execFileAsync = promisify(execFile);
 
 // Comprime un video con el ffmpeg instalado en el sistema
