@@ -18,10 +18,21 @@ jobs:
     # client" también necesita DATABASE_URL desde que prisma.config.ts
     # la resuelve vía env("DATABASE_URL").
     env:
+      env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
+      NEXT_PUBLIC_MP_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_MP_PUBLIC_KEY }}
+      MP_WEBHOOK_URL: ${{ secrets.MP_WEBHOOK_URL }}
+      WHATSAPP_ADMIN: ${{ secrets.WHATSAPP_ADMIN }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
 
     steps:
       - name: Checkout code
